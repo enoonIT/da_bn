@@ -1,0 +1,38 @@
+2016-10-21 15:04:53 [DEBUG] 620 total lines in file
+2016-10-21 15:04:53 [INFO ] 620 valid lines in file
+2016-10-21 15:04:53 [DEBUG] Category 0 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 1 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 2 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 3 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 4 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 5 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 6 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 7 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 8 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 9 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 10 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 11 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 12 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 13 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 14 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 15 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 16 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 17 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 18 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 19 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 20 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 21 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 22 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 23 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 24 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 25 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 26 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 27 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 28 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 29 has 20 images.
+2016-10-21 15:04:53 [DEBUG] Category 30 has 20 images.
+2016-10-21 15:04:56 [DEBUG] 620 images loaded
+2016-10-21 15:04:56 [INFO ] 620 images written to database
+2016-10-21 15:04:56 [INFO ] Mean saved at "/home/enoon/libs/DIGITS/digits/jobs/20161021-150446-13b1/mean.binaryproto"
+2016-10-21 15:04:56 [INFO ] Mean saved at "/home/enoon/libs/DIGITS/digits/jobs/20161021-150446-13b1/mean.jpg"
+2016-10-21 15:04:56 [INFO ] Database created after 2 seconds.
