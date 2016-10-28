@@ -29,7 +29,6 @@ class Settings:
 S = Settings()
 K = Keys()
 Dataset = namedtuple('Dataset', ['size', 'image_list_path'])
-Setting = namedtuple('Setting', ['source', 'target'])
 
 train_defaults = {
     "SOURCE_BSIZE": 128,
@@ -38,7 +37,7 @@ train_defaults = {
     "SOURCE_LIST_PATH": None,
     "TARGET_LIST_PATH": None,
     "ENTROPY_LOSS_WEIGHT": 0.6,
-    "MEAN_FILE": "../../datasets/imagenet_mean.binaryproto"
+    "MEAN_FILE": "../../../datasets/imagenet_mean.binaryproto"
 }
 
 solver_defaults = {
@@ -55,10 +54,10 @@ exp_settings = [S.base, S.dual_shared_bn, S.dual_separated_bn, S.dual]
 
 
 def build_all(args):
-    amazon10 = Dataset(958, "../../datasets/amazon10/train.txt")
-    webcam10 = Dataset(295, "../../datasets/webcam10/train.txt")
-    caltech10 = Dataset(1123, "../../datasets/caltech10/train.txt")
-    dslr10 = Dataset(157, "../../datasets/dslr10/train.txt")
+    amazon10 = Dataset(958, "../../../datasets/amazon10/train.txt")
+    webcam10 = Dataset(295, "../../../datasets/webcam10/train.txt")
+    caltech10 = Dataset(1123, "../../../datasets/caltech10/train.txt")
+    dslr10 = Dataset(157, "../../../datasets/dslr10/train.txt")
     data_info = {K.A: amazon10, K.W: webcam10, K.C: caltech10, K.D: dslr10}
     with open('templates/solver_template.prototxt', 'rt') as solver_file:
         builder = prototxt_builder.BuilderHelper(data_info, solver_defaults, train_defaults,
