@@ -13,9 +13,9 @@ layer {
     mean_file: "$MEAN_FILE$"
   }
   image_data_param {
-    source: "../../datasets/caltech10/train.txt"
+    source: "$SOURCE_LIST_PATH$"
     #root_folder: ""
-    batch_size: 202
+    batch_size: $SOURCE_BSIZE$
     shuffle: true
   }
 }
@@ -33,9 +33,9 @@ layer {
     mean_file: "$MEAN_FILE$"
   }
   image_data_param {
-    source: "../../datasets/webcam10/train.txt"
+    source: "$TARGET_LIST_PATH$"
     #root_folder: ""
-    batch_size: 54
+    batch_size: $TARGET_BSIZE$
     shuffle: true
   }
 }
@@ -75,9 +75,9 @@ layer {
     mean_file: "$MEAN_FILE$"
   }
   image_data_param {
-    source: "../../datasets/webcam10/train.txt"
+    source: "$TARGET_LIST_PATH$"
     #root_folder: ""
-    batch_size: 128
+    batch_size: $TEST_BSIZE$
     shuffle: true
   }
 }
@@ -110,6 +110,7 @@ layer {
     offset: 14
   }
 }
+
 layer {
   name: "conv1"
   type: "Convolution"
@@ -450,7 +451,7 @@ layer {
   }
   slice_param {
     axis: 0
-    slice_point: 202
+    slice_point: $SOURCE_BSIZE$
   }
 }
 layer {
@@ -468,7 +469,7 @@ layer {
   type: "EntropyLoss"
   bottom: "fc8-target"
   top: "loss-target"
-  loss_weight: 0.6
+  loss_weight: $ENTROPY_LOSS_WEIGHT$
   include {
     phase: TRAIN
   }

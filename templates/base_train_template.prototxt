@@ -1,7 +1,7 @@
 name: "AlexNet"
 layer {
   name: "data"
-  type: "Data"
+  type: "ImageData"
   top: "data"
   top: "label"
   include {
@@ -12,29 +12,60 @@ layer {
     crop_size: 227
     mean_file: "$MEAN_FILE$"
   }
-  data_param {
-    source: "../../datasets/caltech10/train_db"
-    batch_size: 128
-    backend: LMDB
+  image_data_param {
+    source: "$SOURCE_LIST_PATH$"
+    #root_folder: ""
+    batch_size: $SOURCE_BSIZE$
+    shuffle: true
   }
 }
 layer {
-  name: "data"
-  type: "Data"
-  top: "data"
+  name: "data-test"
+  type: "ImageData"
+  top: "data-test"
   top: "label"
   include {
     phase: TEST
   }
   transform_param {
     mirror: false
-    crop_size: 227
+    #crop_size: 227
     mean_file: "$MEAN_FILE$"
   }
-  data_param {
-    source: "../../datasets/webcam10/train_db"
-    batch_size: 50
-    backend: LMDB
+  image_data_param {
+    source: "$TARGET_LIST_PATH$"
+    #root_folder: ""
+    batch_size: $TEST_BSIZE$
+    shuffle: true
+  }
+}
+layer {
+  name: "reference"
+  type: "DummyData"
+  top: "reference"
+  include {
+    phase: TEST
+  }
+  dummy_data_param {
+    shape {
+      dim: 1
+      dim: 1
+      dim: 227
+      dim: 227
+    }
+  }
+}
+layer {
+  name: "data-test-crop"
+  type: "Crop"
+  bottom: "data-test"
+  bottom: "reference"
+  top: "data"
+  include {
+    phase: TEST
+  }
+  crop_param {
+    offset: 14
   }
 }
 layer {

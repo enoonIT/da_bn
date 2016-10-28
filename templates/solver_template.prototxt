@@ -1,4 +1,4 @@
-net: "$TRAIN_PROTOTXT"
+net: "$TRAIN_PROTOTXT$"
 
 # Testing
 test_iter: $TEST_ITER$
