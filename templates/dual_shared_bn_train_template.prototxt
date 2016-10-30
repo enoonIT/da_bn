@@ -509,7 +509,7 @@ layer {
       type: "gaussian"
       std: 0.01
     }
-    num_output: 10
+    num_output: $N_CLASSES$
     bias_term: false
   }
 }

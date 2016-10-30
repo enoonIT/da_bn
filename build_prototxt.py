@@ -37,7 +37,8 @@ train_defaults = {
     "SOURCE_LIST_PATH": None,
     "TARGET_LIST_PATH": None,
     "ENTROPY_LOSS_WEIGHT": 0.6,
-    "MEAN_FILE": "../../../datasets/imagenet_mean.binaryproto"
+    "MEAN_FILE": "../../../datasets/imagenet_mean.binaryproto",
+    "N_CLASSES" : 10
 }
 
 solver_defaults = {
