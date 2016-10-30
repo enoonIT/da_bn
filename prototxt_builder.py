@@ -14,7 +14,7 @@ class BuilderHelper:
         params_functions[S.base] = build_dual_shared_bn
         params_functions[S.dual_separated_bn] = build_dual_separated_bn
         params_functions[S.dual_shared_bn] = build_dual_shared_bn
-        params_functions[S.dual] = build_dual_shared_bn
+        params_functions[S.dual] = build_dual_separated_bn
         self.data_info = database_info
         self.solver_defaults = solver_defaults
         self.train_defaults = train_defaults
