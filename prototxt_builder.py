@@ -4,7 +4,6 @@ from os.path import join, exists
 from os import makedirs
 from build_prototxt import S
 from collections import namedtuple
-BATCH_SIZE = 256
 params_functions = {}
 Setting = namedtuple('Setting', ['name', 'source', 'target'])
 
@@ -68,10 +67,10 @@ def fill_general_params(solver, train, setting):
 def build_dual_separated_bn(solver, train, setting):
     train_prototxt_name = "dual_separated_bn_train.prototxt"
     (source_bsize, target_bsize) = get_batch_sizes(
-        setting.source.size, setting.target.size, BATCH_SIZE)
-    MAX_ITER = int((200 * setting.source.size) / source_bsize)
+        setting.source.size, setting.target.size, train["BSIZE"])
+    MAX_ITER = int((40 * setting.source.size) / source_bsize)
     # solver params
-    solver["STEPSIZE"] = MAX_ITER
+    solver["STEPSIZE"] = int(MAX_ITER * 0.9)
     solver["MAX_ITER"] = MAX_ITER
     solver["TRAIN_PROTOTXT"] = train_prototxt_name
     solver["SNAPSHOT_PREFIX"] = "snapshot_dual_separated_bn"
@@ -83,14 +82,10 @@ def build_dual_separated_bn(solver, train, setting):
 
 def build_dual_shared_bn(solver, train, setting):
     train_prototxt_name = "dual_shared_bn_train.prototxt"
-    (source_bsize, target_bsize) = (128, 128)
-    MAX_ITER = int((200 * setting.source.size) / source_bsize)
+    source_bsize = train["SOURCE_BSIZE"]
+    MAX_ITER = int((40 * setting.source.size) / source_bsize)
     # solver params
-    solver["STEPSIZE"] = MAX_ITER
+    solver["STEPSIZE"] = int(MAX_ITER * 0.9)
     solver["MAX_ITER"] = MAX_ITER
     solver["TRAIN_PROTOTXT"] = train_prototxt_name
     solver["SNAPSHOT_PREFIX"] = "snapshot_dual_shared_bn"
-
-    # train params
-    train["SOURCE_BSIZE"] = source_bsize
-    train["TARGET_BSIZE"] = target_bsize

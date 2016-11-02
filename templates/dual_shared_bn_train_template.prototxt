@@ -534,33 +534,6 @@ layer {
     moving_average_fraction: 0.95
   }
 }
-layer {
-  name: "scale8"
-  type: "Scale"
-  bottom: "fc8"
-  top: "fc8"
-  param {
-    lr_mult: 2
-    decay_mult: 0
-  }
-  param {
-    lr_mult: 1
-    decay_mult: 0
-  }
-  scale_param {
-    filler {
-      type: "constant"
-      value: 1
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-    axis: 1
-    num_axes: 1
-    bias_term: true
-  }
-}
 
 layer {
   name: "slice"
