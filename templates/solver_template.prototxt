@@ -20,3 +20,4 @@ display: 5
 snapshot: 0
 snapshot_prefix: "$SNAPSHOT_PREFIX$"
 solver_mode: GPU
+#random_seed: 42
