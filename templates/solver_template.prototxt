@@ -2,7 +2,7 @@ net: "$TRAIN_PROTOTXT$"
 
 # Testing
 test_iter: $TEST_ITER$
-test_interval: 20
+test_interval: $TEST_INTERVAL$
 
 # Schedule
 base_lr: $BASE_LR$

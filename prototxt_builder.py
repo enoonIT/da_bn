@@ -2,17 +2,20 @@
 from math import floor, ceil
 from os.path import join, exists
 from os import makedirs
-from build_prototxt import S
+from build_office31 import S
 from collections import namedtuple
 from random import shuffle, seed
 params_functions = {}
-Setting = namedtuple('Setting', ['name', 'source', 'target', 'cross_validate'])
-NUM_EPOCHS=120
+Setting = namedtuple('Setting', ['name', 'source', 'target', 'cross_validate', 'epochs', 'sampling_protocol'])
+
 
 class BuilderHelper:
     def __init__(self, database_info, solver_defaults, train_defaults, solver_template):
         params_functions[S.base] = build_dual_shared_bn
         params_functions[S.dual_separated_bn] = build_dual_separated_bn
+        params_functions[S.alexnet_bn] = build_dual_separated_bn
+        params_functions[S.inception] = build_inception
+        params_functions[S.dual_separated_bn_scale] = build_dual_separated_bn
         params_functions[S.dual_shared_bn] = build_dual_shared_bn
         params_functions[S.dual] = build_dual_separated_bn
         self.data_info = database_info
@@ -20,15 +23,20 @@ class BuilderHelper:
         self.train_defaults = train_defaults
         self.solver_template = solver_template
         self.cross_validate = False
+        self.NUM_EPOCHS = 120
+        self.sampling_protocol = False
 
     def build_all(self, data_settings, exp_settings, basedir):
+        if self.sampling_protocol:
+            print "Will do sampling protocol"
         for setting in data_settings:
             setting_dir = join(basedir, "{}_to_{}".format(setting[0], setting[1]))
             for exp in exp_settings:
                 new_dir = join(setting_dir, exp)
                 if not exists(new_dir):
                     makedirs(new_dir)
-                exp_setting = Setting(exp, self.data_info[setting[0]], self.data_info[setting[1]], self.cross_validate)
+                exp_setting = Setting(exp, self.data_info[setting[0]], self.data_info[setting[1]],
+                                      self.cross_validate, self.NUM_EPOCHS, self.sampling_protocol)
                 with open(join('templates', '%s_train_template.prototxt' % exp), 'rt') as train_f:
                     train_template = train_f.read()
                 self.write_templates(self.solver_defaults.copy(), self.train_defaults.copy(),
@@ -43,7 +51,23 @@ class BuilderHelper:
         solver_text = multipleReplace(solver_template, solver)
         source_files = open(setting.source.image_list_path).readlines()
         target_files = open(setting.target.image_list_path).readlines()
-        if setting.cross_validate:
+        if setting.sampling_protocol:
+            n_splits = 5
+            seed(0)
+            for k in range(n_splits):
+                new_dir = join(outpath, "k_" + str(k))
+                if not exists(new_dir):
+                    makedirs(new_dir)
+                shuffle(source_files)
+                splits = get_sampling_split(source_files, setting.source.sampling_size)
+                write_lines(new_dir, "source", splits, None)
+                write_lines(new_dir, "target", target_files, target_files)
+                with open(join(new_dir, "solver.prototxt"), "wt") as solver_file:
+                    solver_file.write(solver_text)
+                with open(join(new_dir, solver["TRAIN_PROTOTXT"]), "wt") as train_file:
+                    train_file.write(train_text)
+
+        elif setting.cross_validate:
             for k in range(setting.cross_validate):
                 new_dir = join(outpath, "k_" + str(k))
                 if not exists(new_dir):
@@ -90,20 +114,36 @@ def fill_general_params(solver, train, setting):
         train["TARGET_TEST_BSIZE"] = int((train["SOURCE_BSIZE"] * target_size) / source_size)
         solver["TEST_ITER"] = int(ceil(float(target_size) / train["TARGET_TEST_BSIZE"]))
     else:
-        train["TEST_BSIZE"] = 128
+        if setting.name is S.inception:
+            train["TEST_BSIZE"] = 8
+        else:
+            train["TEST_BSIZE"] = 128
         solver["TEST_ITER"] = int(ceil(float(setting.target.size) / train["TEST_BSIZE"]))
 
 
+def build_inception(solver, train, setting):
+    train_prototxt_name = "dual_separated_bn_inception_train.prototxt"
+    MAX_ITER = int((setting.epochs * setting.source.size) / 32)
+    solver["STEPSIZE"] = int(MAX_ITER * 0.333)
+    solver["MAX_ITER"] = MAX_ITER
+    solver["TRAIN_PROTOTXT"] = train_prototxt_name
+    solver["SNAPSHOT_PREFIX"] = "snapshot_dual_separated_bn_inception"
+    solver["TEST_INTERVAL"] = 30
+
+
 def build_dual_separated_bn(solver, train, setting):
+#    import ipdb; ipdb.set_trace()
     train_prototxt_name = "dual_separated_bn_train.prototxt"
+    source_size = setting.source.size
+    target_size = setting.target.size
     if setting.cross_validate:
         kval = setting.cross_validate
         source_size = int((kval-1) * setting.source.size) / kval
-        target_size = setting.target.size  # int((kval-1) * setting.target.size) / kval
-        (source_bsize, target_bsize) = get_batch_sizes(source_size, target_size, train["BSIZE"])
-    else:
-        (source_bsize, target_bsize) = get_batch_sizes(setting.source.size, setting.target.size, train["BSIZE"])
-    MAX_ITER = int((NUM_EPOCHS * setting.source.size) / source_bsize)
+    elif setting.sampling_protocol:
+        source_size = int(setting.source.sampling_size * train["N_CLASSES"])
+
+    (source_bsize, target_bsize) = get_batch_sizes(source_size, target_size, train["BSIZE"])
+    MAX_ITER = int((setting.epochs * source_size) / source_bsize)
     # solver params
     solver["STEPSIZE"] = int(MAX_ITER * 0.9)
     solver["MAX_ITER"] = MAX_ITER
@@ -118,7 +158,7 @@ def build_dual_separated_bn(solver, train, setting):
 def build_dual_shared_bn(solver, train, setting):
     train_prototxt_name = "dual_shared_bn_train.prototxt"
     source_bsize = train["SOURCE_BSIZE"]
-    MAX_ITER = int((NUM_EPOCHS * setting.source.size) / source_bsize)
+    MAX_ITER = int((setting.epochs * setting.source.size) / source_bsize)
     # solver params
     solver["STEPSIZE"] = int(MAX_ITER * 0.9)
     solver["MAX_ITER"] = MAX_ITER
@@ -143,3 +183,15 @@ def write_lines(path, append, train_lines, test_lines):
     if test_lines:
         with open(join(path, "test_" + append + ".txt"), 'wt') as tmp:
             tmp.writelines(test_lines)
+
+
+def get_sampling_split(split_lines, sampling):
+    subset = []
+    class_counter = {}
+    for line in split_lines:
+        [path, label] = line.strip().split()
+        items = class_counter.get(label, 0)
+        if items < sampling:
+            subset.append(path + " " + label + "\n")
+            class_counter[label] = items + 1
+    return subset
