@@ -20,7 +20,7 @@ if __name__ == '__main__':
     ax1.plot(train_log["NumIters"], train_log["loss-source"], alpha=0.5, label='train_loss_source')
     if 'loss-target' in train_log:
         ax1.plot(train_log["NumIters"], train_log["loss-target"], alpha=0.3, label='train_loss_target')
-    test_log["loss"][0] = min(5.0, test_log["loss"][0])
+    #test_log["loss"][0] = min(5.0, test_log["loss"][0])
     ax1.plot(test_log["NumIters"], test_log["loss"], 'g', label='test_loss')
     source_test = 'accuracy-source'  # loss-source
     if source_test in test_log:
@@ -33,6 +33,8 @@ if __name__ == '__main__':
     ax1.set_xlabel('iteration')
     ax1.set_ylabel('train loss')
     ax2.set_ylabel('test accuracy')
+    ax1.set_ylim([0,5])
+    ax2.set_ylim([0,1])
     h1, l1 = ax1.get_legend_handles_labels()
     h2, l2 = ax2.get_legend_handles_labels()
     ax1.legend(h1+h2, l1+l2, loc=2)

@@ -45,6 +45,7 @@ class Settings:
         self.dual_separated_bn_scale = "dual_separated_bn_scale"
         self.dual = "dual"
         self.inception = "dual_separated_bn_inception"
+        self.inception_laplace = "dual_separated_bn_inception_laplace"
         self.alexnet_bn = "dual_separated_bn_all"
 
 S = Settings()
@@ -58,8 +59,8 @@ settings10 = [(K.A10, K.C10), (K.W10, K.C10), (K.D10, K.C10),
 # exp_settings = [S.dual_shared_bn, S.dual_separated_bn, S.dual]
 # exp_settings = [S.base, S.dual_shared_bn, S.dual_separated_bn, S.dual]
 # exp_settings = [S.dual_separated_bn_scale]
-exp_settings = [S.dual_separated_bn]
-# exp_settings = [S.inception]
+#exp_settings = [S.dual_separated_bn]
+exp_settings = [S.inception_laplace]
 
 
 def build_all(args):

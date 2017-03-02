@@ -1,0 +1,9611 @@
+name: "InceptionBN"
+layer {
+  name: "data/source"
+  type: "ImageData"
+  top: "data/source"
+  top: "label/source"
+  include {
+    phase: TRAIN
+  }
+  transform_param {
+    mirror: true
+    crop_size: 224
+    mean_value: 104
+    mean_value: 117
+    mean_value: 123
+  }
+  image_data_param {
+    source: "$SOURCE_LIST_PATH$"
+    batch_size: 32
+    shuffle: true
+  }
+}
+layer {
+  name: "data/target"
+  type: "ImageData"
+  top: "data/target"
+  top: "label/target"
+  include {
+    phase: TRAIN
+  }
+  transform_param {
+    mirror: true
+    crop_size: 224
+    mean_value: 104
+    mean_value: 117
+    mean_value: 123
+  }
+  image_data_param {
+    source: "$TARGET_LIST_PATH$"
+    batch_size: 16
+    shuffle: true
+  }
+}
+layer {
+  name: "data/concat"
+  type: "Concat"
+  bottom: "data/source"
+  bottom: "data/target"
+  top: "data"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "silence"
+  type: "Silence"
+  bottom: "label/target"
+  include {
+    phase: TRAIN
+  }
+}
+
+layer {
+  name: "data/test"
+  type: "ImageData"
+  top: "data/full"
+  top: "label"
+  include {
+    phase: TEST
+  }
+  transform_param {
+    mean_value: 104
+    mean_value: 117
+    mean_value: 123
+  }
+  image_data_param {
+    source: "$TARGET_LIST_PATH$"
+    batch_size: $TEST_BSIZE$
+    shuffle: false
+  }
+}
+layer {
+  name: "reference"
+  type: "DummyData"
+  top: "reference"
+  include {
+    phase: TEST
+  }
+  dummy_data_param {
+    shape {
+      dim: 1
+      dim: 1
+      dim: 224
+      dim: 224
+    }
+  }
+}
+layer {
+  name: "data/crop"
+  type: "Crop"
+  bottom: "data/full"
+  bottom: "reference"
+  top: "data"
+  include {
+    phase: TEST
+  }
+  crop_param {
+    offset: 16
+  }
+}
+
+layer {
+  name: "conv1/7x7_s2"
+  type: "Convolution"
+  bottom: "data"
+  top: "conv1/7x7_s2"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    bias_term: false
+    pad: 3
+    kernel_size: 7
+    stride: 2
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "conv1/7x7_s2/bn/slice"
+  type: "Slice"
+  bottom: "conv1/7x7_s2"
+  top: "conv1/7x7_s2/source"
+  top: "conv1/7x7_s2/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "conv1/7x7_s2/bn/source"
+  type: "BatchNorm"
+  bottom: "conv1/7x7_s2/source"
+  top: "conv1/7x7_s2/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "conv1/7x7_s2/bn/target"
+  type: "BatchNorm"
+  bottom: "conv1/7x7_s2/target"
+  top: "conv1/7x7_s2/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "conv1/7x7_s2/bn/concat"
+  type: "Concat"
+  bottom: "conv1/7x7_s2/source"
+  bottom: "conv1/7x7_s2/target"
+  top: "conv1/7x7_s2/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "conv1/7x7_s2/bn/target"
+  type: "BatchNorm"
+  bottom: "conv1/7x7_s2"
+  top: "conv1/7x7_s2/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "conv1/7x7_s2/bn/sc"
+  type: "Scale"
+  bottom: "conv1/7x7_s2/bn"
+  top: "conv1/7x7_s2/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "conv1/7x7_s2/bn/sc/relu"
+  type: "ReLU"
+  bottom: "conv1/7x7_s2/bn"
+  top: "conv1/7x7_s2/bn"
+}
+layer {
+  name: "pool1/3x3_s2"
+  type: "Pooling"
+  bottom: "conv1/7x7_s2/bn"
+  top: "pool1/3x3_s2"
+  pooling_param {
+    pool: MAX
+    kernel_size: 3
+    stride: 2
+  }
+}
+layer {
+  name: "conv2/3x3_reduce"
+  type: "Convolution"
+  bottom: "pool1/3x3_s2"
+  top: "conv2/3x3_reduce"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "conv2/3x3_reduce/bn/slice"
+  type: "Slice"
+  bottom: "conv2/3x3_reduce"
+  top: "conv2/3x3_reduce/source"
+  top: "conv2/3x3_reduce/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "conv2/3x3_reduce/bn/source"
+  type: "BatchNorm"
+  bottom: "conv2/3x3_reduce/source"
+  top: "conv2/3x3_reduce/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "conv2/3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "conv2/3x3_reduce/target"
+  top: "conv2/3x3_reduce/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "conv2/3x3_reduce/bn/concat"
+  type: "Concat"
+  bottom: "conv2/3x3_reduce/source"
+  bottom: "conv2/3x3_reduce/target"
+  top: "conv2/3x3_reduce/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "conv2/3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "conv2/3x3_reduce"
+  top: "conv2/3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "conv2/3x3_reduce/bn/sc"
+  type: "Scale"
+  bottom: "conv2/3x3_reduce/bn"
+  top: "conv2/3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "conv2/3x3_reduce/bn/sc/relu"
+  type: "ReLU"
+  bottom: "conv2/3x3_reduce/bn"
+  top: "conv2/3x3_reduce/bn"
+}
+layer {
+  name: "conv2/3x3"
+  type: "Convolution"
+  bottom: "conv2/3x3_reduce/bn"
+  top: "conv2/3x3"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 192
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "conv2/3x3/bn/slice"
+  type: "Slice"
+  bottom: "conv2/3x3"
+  top: "conv2/3x3/source"
+  top: "conv2/3x3/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "conv2/3x3/bn/source"
+  type: "BatchNorm"
+  bottom: "conv2/3x3/source"
+  top: "conv2/3x3/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "conv2/3x3/bn/target"
+  type: "BatchNorm"
+  bottom: "conv2/3x3/target"
+  top: "conv2/3x3/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "conv2/3x3/bn/concat"
+  type: "Concat"
+  bottom: "conv2/3x3/source"
+  bottom: "conv2/3x3/target"
+  top: "conv2/3x3/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "conv2/3x3/bn/target"
+  type: "BatchNorm"
+  bottom: "conv2/3x3"
+  top: "conv2/3x3/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "conv2/3x3/bn/sc"
+  type: "Scale"
+  bottom: "conv2/3x3/bn"
+  top: "conv2/3x3/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "conv2/3x3/bn/sc/relu"
+  type: "ReLU"
+  bottom: "conv2/3x3/bn"
+  top: "conv2/3x3/bn"
+}
+layer {
+  name: "pool2/3x3_s2"
+  type: "Pooling"
+  bottom: "conv2/3x3/bn"
+  top: "pool2/3x3_s2"
+  pooling_param {
+    pool: MAX
+    kernel_size: 3
+    stride: 2
+  }
+}
+layer {
+  name: "inception_3a/1x1"
+  type: "Convolution"
+  bottom: "pool2/3x3_s2"
+  top: "inception_3a/1x1"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_3a/1x1/bn/slice"
+  type: "Slice"
+  bottom: "inception_3a/1x1"
+  top: "inception_3a/1x1/source"
+  top: "inception_3a/1x1/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3a/1x1/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_3a/1x1/source"
+  top: "inception_3a/1x1/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3a/1x1/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3a/1x1/target"
+  top: "inception_3a/1x1/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3a/1x1/bn/concat"
+  type: "Concat"
+  bottom: "inception_3a/1x1/source"
+  bottom: "inception_3a/1x1/target"
+  top: "inception_3a/1x1/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3a/1x1/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3a/1x1"
+  top: "inception_3a/1x1/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_3a/1x1/bn/sc"
+  type: "Scale"
+  bottom: "inception_3a/1x1/bn"
+  top: "inception_3a/1x1/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_3a/1x1/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_3a/1x1/bn"
+  top: "inception_3a/1x1/bn"
+}
+layer {
+  name: "inception_3a/3x3_reduce"
+  type: "Convolution"
+  bottom: "pool2/3x3_s2"
+  top: "inception_3a/3x3_reduce"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_3a/3x3_reduce/bn/slice"
+  type: "Slice"
+  bottom: "inception_3a/3x3_reduce"
+  top: "inception_3a/3x3_reduce/source"
+  top: "inception_3a/3x3_reduce/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3a/3x3_reduce/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_3a/3x3_reduce/source"
+  top: "inception_3a/3x3_reduce/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3a/3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3a/3x3_reduce/target"
+  top: "inception_3a/3x3_reduce/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3a/3x3_reduce/bn/concat"
+  type: "Concat"
+  bottom: "inception_3a/3x3_reduce/source"
+  bottom: "inception_3a/3x3_reduce/target"
+  top: "inception_3a/3x3_reduce/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3a/3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3a/3x3_reduce"
+  top: "inception_3a/3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_3a/3x3_reduce/bn/sc"
+  type: "Scale"
+  bottom: "inception_3a/3x3_reduce/bn"
+  top: "inception_3a/3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_3a/3x3_reduce/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_3a/3x3_reduce/bn"
+  top: "inception_3a/3x3_reduce/bn"
+}
+layer {
+  name: "inception_3a/3x3"
+  type: "Convolution"
+  bottom: "inception_3a/3x3_reduce/bn"
+  top: "inception_3a/3x3"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_3a/3x3/bn/slice"
+  type: "Slice"
+  bottom: "inception_3a/3x3"
+  top: "inception_3a/3x3/source"
+  top: "inception_3a/3x3/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3a/3x3/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_3a/3x3/source"
+  top: "inception_3a/3x3/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3a/3x3/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3a/3x3/target"
+  top: "inception_3a/3x3/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3a/3x3/bn/concat"
+  type: "Concat"
+  bottom: "inception_3a/3x3/source"
+  bottom: "inception_3a/3x3/target"
+  top: "inception_3a/3x3/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3a/3x3/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3a/3x3"
+  top: "inception_3a/3x3/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_3a/3x3/bn/sc"
+  type: "Scale"
+  bottom: "inception_3a/3x3/bn"
+  top: "inception_3a/3x3/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_3a/3x3/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_3a/3x3/bn"
+  top: "inception_3a/3x3/bn"
+}
+layer {
+  name: "inception_3a/double3x3_reduce"
+  type: "Convolution"
+  bottom: "pool2/3x3_s2"
+  top: "inception_3a/double3x3_reduce"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_3a/double3x3_reduce/bn/slice"
+  type: "Slice"
+  bottom: "inception_3a/double3x3_reduce"
+  top: "inception_3a/double3x3_reduce/source"
+  top: "inception_3a/double3x3_reduce/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3a/double3x3_reduce/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_3a/double3x3_reduce/source"
+  top: "inception_3a/double3x3_reduce/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3a/double3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3a/double3x3_reduce/target"
+  top: "inception_3a/double3x3_reduce/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3a/double3x3_reduce/bn/concat"
+  type: "Concat"
+  bottom: "inception_3a/double3x3_reduce/source"
+  bottom: "inception_3a/double3x3_reduce/target"
+  top: "inception_3a/double3x3_reduce/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3a/double3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3a/double3x3_reduce"
+  top: "inception_3a/double3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_3a/double3x3_reduce/bn/sc"
+  type: "Scale"
+  bottom: "inception_3a/double3x3_reduce/bn"
+  top: "inception_3a/double3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_3a/double3x3_reduce/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_3a/double3x3_reduce/bn"
+  top: "inception_3a/double3x3_reduce/bn"
+}
+layer {
+  name: "inception_3a/double3x3a"
+  type: "Convolution"
+  bottom: "inception_3a/double3x3_reduce/bn"
+  top: "inception_3a/double3x3a"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 96
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_3a/double3x3a/bn/slice"
+  type: "Slice"
+  bottom: "inception_3a/double3x3a"
+  top: "inception_3a/double3x3a/source"
+  top: "inception_3a/double3x3a/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3a/double3x3a/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_3a/double3x3a/source"
+  top: "inception_3a/double3x3a/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3a/double3x3a/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3a/double3x3a/target"
+  top: "inception_3a/double3x3a/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3a/double3x3a/bn/concat"
+  type: "Concat"
+  bottom: "inception_3a/double3x3a/source"
+  bottom: "inception_3a/double3x3a/target"
+  top: "inception_3a/double3x3a/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3a/double3x3a/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3a/double3x3a"
+  top: "inception_3a/double3x3a/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_3a/double3x3a/bn/sc"
+  type: "Scale"
+  bottom: "inception_3a/double3x3a/bn"
+  top: "inception_3a/double3x3a/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_3a/double3x3a/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_3a/double3x3a/bn"
+  top: "inception_3a/double3x3a/bn"
+}
+layer {
+  name: "inception_3a/double3x3b"
+  type: "Convolution"
+  bottom: "inception_3a/double3x3a/bn"
+  top: "inception_3a/double3x3b"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 96
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_3a/double3x3b/bn/slice"
+  type: "Slice"
+  bottom: "inception_3a/double3x3b"
+  top: "inception_3a/double3x3b/source"
+  top: "inception_3a/double3x3b/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3a/double3x3b/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_3a/double3x3b/source"
+  top: "inception_3a/double3x3b/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3a/double3x3b/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3a/double3x3b/target"
+  top: "inception_3a/double3x3b/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3a/double3x3b/bn/concat"
+  type: "Concat"
+  bottom: "inception_3a/double3x3b/source"
+  bottom: "inception_3a/double3x3b/target"
+  top: "inception_3a/double3x3b/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3a/double3x3b/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3a/double3x3b"
+  top: "inception_3a/double3x3b/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_3a/double3x3b/bn/sc"
+  type: "Scale"
+  bottom: "inception_3a/double3x3b/bn"
+  top: "inception_3a/double3x3b/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_3a/double3x3b/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_3a/double3x3b/bn"
+  top: "inception_3a/double3x3b/bn"
+}
+layer {
+  name: "inception_3a/pool"
+  type: "Pooling"
+  bottom: "pool2/3x3_s2"
+  top: "inception_3a/pool"
+  pooling_param {
+    pool: AVE
+    kernel_size: 3
+    stride: 1
+    pad: 1
+  }
+}
+layer {
+  name: "inception_3a/pool_proj"
+  type: "Convolution"
+  bottom: "inception_3a/pool"
+  top: "inception_3a/pool_proj"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 32
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_3a/pool_proj/bn/slice"
+  type: "Slice"
+  bottom: "inception_3a/pool_proj"
+  top: "inception_3a/pool_proj/source"
+  top: "inception_3a/pool_proj/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3a/pool_proj/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_3a/pool_proj/source"
+  top: "inception_3a/pool_proj/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3a/pool_proj/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3a/pool_proj/target"
+  top: "inception_3a/pool_proj/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3a/pool_proj/bn/concat"
+  type: "Concat"
+  bottom: "inception_3a/pool_proj/source"
+  bottom: "inception_3a/pool_proj/target"
+  top: "inception_3a/pool_proj/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3a/pool_proj/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3a/pool_proj"
+  top: "inception_3a/pool_proj/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_3a/pool_proj/bn/sc"
+  type: "Scale"
+  bottom: "inception_3a/pool_proj/bn"
+  top: "inception_3a/pool_proj/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_3a/pool_proj/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_3a/pool_proj/bn"
+  top: "inception_3a/pool_proj/bn"
+}
+layer {
+  name: "inception_3a/output"
+  type: "Concat"
+  bottom: "inception_3a/1x1/bn"
+  bottom: "inception_3a/3x3/bn"
+  bottom: "inception_3a/double3x3b/bn"
+  bottom: "inception_3a/pool_proj/bn"
+  top: "inception_3a/output"
+}
+layer {
+  name: "inception_3b/1x1"
+  type: "Convolution"
+  bottom: "inception_3a/output"
+  top: "inception_3b/1x1"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_3b/1x1/bn/slice"
+  type: "Slice"
+  bottom: "inception_3b/1x1"
+  top: "inception_3b/1x1/source"
+  top: "inception_3b/1x1/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3b/1x1/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_3b/1x1/source"
+  top: "inception_3b/1x1/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3b/1x1/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3b/1x1/target"
+  top: "inception_3b/1x1/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3b/1x1/bn/concat"
+  type: "Concat"
+  bottom: "inception_3b/1x1/source"
+  bottom: "inception_3b/1x1/target"
+  top: "inception_3b/1x1/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3b/1x1/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3b/1x1"
+  top: "inception_3b/1x1/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_3b/1x1/bn/sc"
+  type: "Scale"
+  bottom: "inception_3b/1x1/bn"
+  top: "inception_3b/1x1/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_3b/1x1/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_3b/1x1/bn"
+  top: "inception_3b/1x1/bn"
+}
+layer {
+  name: "inception_3b/3x3_reduce"
+  type: "Convolution"
+  bottom: "inception_3a/output"
+  top: "inception_3b/3x3_reduce"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_3b/3x3_reduce/bn/slice"
+  type: "Slice"
+  bottom: "inception_3b/3x3_reduce"
+  top: "inception_3b/3x3_reduce/source"
+  top: "inception_3b/3x3_reduce/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3b/3x3_reduce/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_3b/3x3_reduce/source"
+  top: "inception_3b/3x3_reduce/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3b/3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3b/3x3_reduce/target"
+  top: "inception_3b/3x3_reduce/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3b/3x3_reduce/bn/concat"
+  type: "Concat"
+  bottom: "inception_3b/3x3_reduce/source"
+  bottom: "inception_3b/3x3_reduce/target"
+  top: "inception_3b/3x3_reduce/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3b/3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3b/3x3_reduce"
+  top: "inception_3b/3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_3b/3x3_reduce/bn/sc"
+  type: "Scale"
+  bottom: "inception_3b/3x3_reduce/bn"
+  top: "inception_3b/3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_3b/3x3_reduce/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_3b/3x3_reduce/bn"
+  top: "inception_3b/3x3_reduce/bn"
+}
+layer {
+  name: "inception_3b/3x3"
+  type: "Convolution"
+  bottom: "inception_3b/3x3_reduce/bn"
+  top: "inception_3b/3x3"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 96
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_3b/3x3/bn/slice"
+  type: "Slice"
+  bottom: "inception_3b/3x3"
+  top: "inception_3b/3x3/source"
+  top: "inception_3b/3x3/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3b/3x3/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_3b/3x3/source"
+  top: "inception_3b/3x3/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3b/3x3/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3b/3x3/target"
+  top: "inception_3b/3x3/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3b/3x3/bn/concat"
+  type: "Concat"
+  bottom: "inception_3b/3x3/source"
+  bottom: "inception_3b/3x3/target"
+  top: "inception_3b/3x3/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3b/3x3/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3b/3x3"
+  top: "inception_3b/3x3/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_3b/3x3/bn/sc"
+  type: "Scale"
+  bottom: "inception_3b/3x3/bn"
+  top: "inception_3b/3x3/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_3b/3x3/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_3b/3x3/bn"
+  top: "inception_3b/3x3/bn"
+}
+layer {
+  name: "inception_3b/double3x3_reduce"
+  type: "Convolution"
+  bottom: "inception_3a/output"
+  top: "inception_3b/double3x3_reduce"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_3b/double3x3_reduce/bn/slice"
+  type: "Slice"
+  bottom: "inception_3b/double3x3_reduce"
+  top: "inception_3b/double3x3_reduce/source"
+  top: "inception_3b/double3x3_reduce/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3b/double3x3_reduce/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_3b/double3x3_reduce/source"
+  top: "inception_3b/double3x3_reduce/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3b/double3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3b/double3x3_reduce/target"
+  top: "inception_3b/double3x3_reduce/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3b/double3x3_reduce/bn/concat"
+  type: "Concat"
+  bottom: "inception_3b/double3x3_reduce/source"
+  bottom: "inception_3b/double3x3_reduce/target"
+  top: "inception_3b/double3x3_reduce/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3b/double3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3b/double3x3_reduce"
+  top: "inception_3b/double3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_3b/double3x3_reduce/bn/sc"
+  type: "Scale"
+  bottom: "inception_3b/double3x3_reduce/bn"
+  top: "inception_3b/double3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_3b/double3x3_reduce/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_3b/double3x3_reduce/bn"
+  top: "inception_3b/double3x3_reduce/bn"
+}
+layer {
+  name: "inception_3b/double3x3a"
+  type: "Convolution"
+  bottom: "inception_3b/double3x3_reduce/bn"
+  top: "inception_3b/double3x3a"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 96
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_3b/double3x3a/bn/slice"
+  type: "Slice"
+  bottom: "inception_3b/double3x3a"
+  top: "inception_3b/double3x3a/source"
+  top: "inception_3b/double3x3a/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3b/double3x3a/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_3b/double3x3a/source"
+  top: "inception_3b/double3x3a/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3b/double3x3a/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3b/double3x3a/target"
+  top: "inception_3b/double3x3a/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3b/double3x3a/bn/concat"
+  type: "Concat"
+  bottom: "inception_3b/double3x3a/source"
+  bottom: "inception_3b/double3x3a/target"
+  top: "inception_3b/double3x3a/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3b/double3x3a/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3b/double3x3a"
+  top: "inception_3b/double3x3a/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_3b/double3x3a/bn/sc"
+  type: "Scale"
+  bottom: "inception_3b/double3x3a/bn"
+  top: "inception_3b/double3x3a/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_3b/double3x3a/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_3b/double3x3a/bn"
+  top: "inception_3b/double3x3a/bn"
+}
+layer {
+  name: "inception_3b/double3x3b"
+  type: "Convolution"
+  bottom: "inception_3b/double3x3a/bn"
+  top: "inception_3b/double3x3b"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 96
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_3b/double3x3b/bn/slice"
+  type: "Slice"
+  bottom: "inception_3b/double3x3b"
+  top: "inception_3b/double3x3b/source"
+  top: "inception_3b/double3x3b/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3b/double3x3b/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_3b/double3x3b/source"
+  top: "inception_3b/double3x3b/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3b/double3x3b/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3b/double3x3b/target"
+  top: "inception_3b/double3x3b/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3b/double3x3b/bn/concat"
+  type: "Concat"
+  bottom: "inception_3b/double3x3b/source"
+  bottom: "inception_3b/double3x3b/target"
+  top: "inception_3b/double3x3b/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3b/double3x3b/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3b/double3x3b"
+  top: "inception_3b/double3x3b/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_3b/double3x3b/bn/sc"
+  type: "Scale"
+  bottom: "inception_3b/double3x3b/bn"
+  top: "inception_3b/double3x3b/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_3b/double3x3b/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_3b/double3x3b/bn"
+  top: "inception_3b/double3x3b/bn"
+}
+layer {
+  name: "inception_3b/pool"
+  type: "Pooling"
+  bottom: "inception_3a/output"
+  top: "inception_3b/pool"
+  pooling_param {
+    pool: AVE
+    kernel_size: 3
+    stride: 1
+    pad: 1
+  }
+}
+layer {
+  name: "inception_3b/pool_proj"
+  type: "Convolution"
+  bottom: "inception_3b/pool"
+  top: "inception_3b/pool_proj"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_3b/pool_proj/bn/slice"
+  type: "Slice"
+  bottom: "inception_3b/pool_proj"
+  top: "inception_3b/pool_proj/source"
+  top: "inception_3b/pool_proj/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3b/pool_proj/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_3b/pool_proj/source"
+  top: "inception_3b/pool_proj/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3b/pool_proj/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3b/pool_proj/target"
+  top: "inception_3b/pool_proj/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3b/pool_proj/bn/concat"
+  type: "Concat"
+  bottom: "inception_3b/pool_proj/source"
+  bottom: "inception_3b/pool_proj/target"
+  top: "inception_3b/pool_proj/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3b/pool_proj/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3b/pool_proj"
+  top: "inception_3b/pool_proj/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_3b/pool_proj/bn/sc"
+  type: "Scale"
+  bottom: "inception_3b/pool_proj/bn"
+  top: "inception_3b/pool_proj/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_3b/pool_proj/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_3b/pool_proj/bn"
+  top: "inception_3b/pool_proj/bn"
+}
+layer {
+  name: "inception_3b/output"
+  type: "Concat"
+  bottom: "inception_3b/1x1/bn"
+  bottom: "inception_3b/3x3/bn"
+  bottom: "inception_3b/double3x3b/bn"
+  bottom: "inception_3b/pool_proj/bn"
+  top: "inception_3b/output"
+}
+layer {
+  name: "inception_3c/3x3_reduce"
+  type: "Convolution"
+  bottom: "inception_3b/output"
+  top: "inception_3c/3x3_reduce"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 128
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_3c/3x3_reduce/bn/slice"
+  type: "Slice"
+  bottom: "inception_3c/3x3_reduce"
+  top: "inception_3c/3x3_reduce/source"
+  top: "inception_3c/3x3_reduce/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3c/3x3_reduce/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_3c/3x3_reduce/source"
+  top: "inception_3c/3x3_reduce/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3c/3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3c/3x3_reduce/target"
+  top: "inception_3c/3x3_reduce/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3c/3x3_reduce/bn/concat"
+  type: "Concat"
+  bottom: "inception_3c/3x3_reduce/source"
+  bottom: "inception_3c/3x3_reduce/target"
+  top: "inception_3c/3x3_reduce/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3c/3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3c/3x3_reduce"
+  top: "inception_3c/3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_3c/3x3_reduce/bn/sc"
+  type: "Scale"
+  bottom: "inception_3c/3x3_reduce/bn"
+  top: "inception_3c/3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_3c/3x3_reduce/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_3c/3x3_reduce/bn"
+  top: "inception_3c/3x3_reduce/bn"
+}
+layer {
+  name: "inception_3c/3x3"
+  type: "Convolution"
+  bottom: "inception_3c/3x3_reduce/bn"
+  top: "inception_3c/3x3"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 160
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 2
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_3c/3x3/bn/slice"
+  type: "Slice"
+  bottom: "inception_3c/3x3"
+  top: "inception_3c/3x3/source"
+  top: "inception_3c/3x3/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3c/3x3/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_3c/3x3/source"
+  top: "inception_3c/3x3/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3c/3x3/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3c/3x3/target"
+  top: "inception_3c/3x3/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3c/3x3/bn/concat"
+  type: "Concat"
+  bottom: "inception_3c/3x3/source"
+  bottom: "inception_3c/3x3/target"
+  top: "inception_3c/3x3/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3c/3x3/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3c/3x3"
+  top: "inception_3c/3x3/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_3c/3x3/bn/sc"
+  type: "Scale"
+  bottom: "inception_3c/3x3/bn"
+  top: "inception_3c/3x3/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_3c/3x3/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_3c/3x3/bn"
+  top: "inception_3c/3x3/bn"
+}
+layer {
+  name: "inception_3c/double3x3_reduce"
+  type: "Convolution"
+  bottom: "inception_3b/output"
+  top: "inception_3c/double3x3_reduce"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_3c/double3x3_reduce/bn/slice"
+  type: "Slice"
+  bottom: "inception_3c/double3x3_reduce"
+  top: "inception_3c/double3x3_reduce/source"
+  top: "inception_3c/double3x3_reduce/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3c/double3x3_reduce/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_3c/double3x3_reduce/source"
+  top: "inception_3c/double3x3_reduce/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3c/double3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3c/double3x3_reduce/target"
+  top: "inception_3c/double3x3_reduce/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3c/double3x3_reduce/bn/concat"
+  type: "Concat"
+  bottom: "inception_3c/double3x3_reduce/source"
+  bottom: "inception_3c/double3x3_reduce/target"
+  top: "inception_3c/double3x3_reduce/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3c/double3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3c/double3x3_reduce"
+  top: "inception_3c/double3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_3c/double3x3_reduce/bn/sc"
+  type: "Scale"
+  bottom: "inception_3c/double3x3_reduce/bn"
+  top: "inception_3c/double3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_3c/double3x3_reduce/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_3c/double3x3_reduce/bn"
+  top: "inception_3c/double3x3_reduce/bn"
+}
+layer {
+  name: "inception_3c/double3x3a"
+  type: "Convolution"
+  bottom: "inception_3c/double3x3_reduce/bn"
+  top: "inception_3c/double3x3a"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 96
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_3c/double3x3a/bn/slice"
+  type: "Slice"
+  bottom: "inception_3c/double3x3a"
+  top: "inception_3c/double3x3a/source"
+  top: "inception_3c/double3x3a/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3c/double3x3a/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_3c/double3x3a/source"
+  top: "inception_3c/double3x3a/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3c/double3x3a/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3c/double3x3a/target"
+  top: "inception_3c/double3x3a/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3c/double3x3a/bn/concat"
+  type: "Concat"
+  bottom: "inception_3c/double3x3a/source"
+  bottom: "inception_3c/double3x3a/target"
+  top: "inception_3c/double3x3a/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3c/double3x3a/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3c/double3x3a"
+  top: "inception_3c/double3x3a/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_3c/double3x3a/bn/sc"
+  type: "Scale"
+  bottom: "inception_3c/double3x3a/bn"
+  top: "inception_3c/double3x3a/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_3c/double3x3a/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_3c/double3x3a/bn"
+  top: "inception_3c/double3x3a/bn"
+}
+layer {
+  name: "inception_3c/double3x3b"
+  type: "Convolution"
+  bottom: "inception_3c/double3x3a/bn"
+  top: "inception_3c/double3x3b"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 96
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 2
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_3c/double3x3b/bn/slice"
+  type: "Slice"
+  bottom: "inception_3c/double3x3b"
+  top: "inception_3c/double3x3b/source"
+  top: "inception_3c/double3x3b/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3c/double3x3b/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_3c/double3x3b/source"
+  top: "inception_3c/double3x3b/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3c/double3x3b/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3c/double3x3b/target"
+  top: "inception_3c/double3x3b/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_3c/double3x3b/bn/concat"
+  type: "Concat"
+  bottom: "inception_3c/double3x3b/source"
+  bottom: "inception_3c/double3x3b/target"
+  top: "inception_3c/double3x3b/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_3c/double3x3b/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_3c/double3x3b"
+  top: "inception_3c/double3x3b/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_3c/double3x3b/bn/sc"
+  type: "Scale"
+  bottom: "inception_3c/double3x3b/bn"
+  top: "inception_3c/double3x3b/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_3c/double3x3b/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_3c/double3x3b/bn"
+  top: "inception_3c/double3x3b/bn"
+}
+layer {
+  name: "inception_3c/pool"
+  type: "Pooling"
+  bottom: "inception_3b/output"
+  top: "inception_3c/pool"
+  pooling_param {
+    pool: MAX
+    kernel_size: 3
+    stride: 2
+  }
+}
+layer {
+  name: "inception_3c/output"
+  type: "Concat"
+  bottom: "inception_3c/3x3/bn"
+  bottom: "inception_3c/double3x3b/bn"
+  bottom: "inception_3c/pool"
+  top: "inception_3c/output"
+}
+layer {
+  name: "inception_4a/1x1"
+  type: "Convolution"
+  bottom: "inception_3c/output"
+  top: "inception_4a/1x1"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 224
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4a/1x1/bn/slice"
+  type: "Slice"
+  bottom: "inception_4a/1x1"
+  top: "inception_4a/1x1/source"
+  top: "inception_4a/1x1/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4a/1x1/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4a/1x1/source"
+  top: "inception_4a/1x1/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4a/1x1/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4a/1x1/target"
+  top: "inception_4a/1x1/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4a/1x1/bn/concat"
+  type: "Concat"
+  bottom: "inception_4a/1x1/source"
+  bottom: "inception_4a/1x1/target"
+  top: "inception_4a/1x1/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4a/1x1/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4a/1x1"
+  top: "inception_4a/1x1/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4a/1x1/bn/sc"
+  type: "Scale"
+  bottom: "inception_4a/1x1/bn"
+  top: "inception_4a/1x1/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4a/1x1/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4a/1x1/bn"
+  top: "inception_4a/1x1/bn"
+}
+layer {
+  name: "inception_4a/3x3_reduce"
+  type: "Convolution"
+  bottom: "inception_3c/output"
+  top: "inception_4a/3x3_reduce"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4a/3x3_reduce/bn/slice"
+  type: "Slice"
+  bottom: "inception_4a/3x3_reduce"
+  top: "inception_4a/3x3_reduce/source"
+  top: "inception_4a/3x3_reduce/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4a/3x3_reduce/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4a/3x3_reduce/source"
+  top: "inception_4a/3x3_reduce/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4a/3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4a/3x3_reduce/target"
+  top: "inception_4a/3x3_reduce/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4a/3x3_reduce/bn/concat"
+  type: "Concat"
+  bottom: "inception_4a/3x3_reduce/source"
+  bottom: "inception_4a/3x3_reduce/target"
+  top: "inception_4a/3x3_reduce/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4a/3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4a/3x3_reduce"
+  top: "inception_4a/3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4a/3x3_reduce/bn/sc"
+  type: "Scale"
+  bottom: "inception_4a/3x3_reduce/bn"
+  top: "inception_4a/3x3_reduce/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4a/3x3_reduce/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4a/3x3_reduce/bn"
+  top: "inception_4a/3x3_reduce/bn"
+}
+layer {
+  name: "inception_4a/3x3"
+  type: "Convolution"
+  bottom: "inception_4a/3x3_reduce/bn"
+  top: "inception_4a/3x3"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 96
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4a/3x3/bn/slice"
+  type: "Slice"
+  bottom: "inception_4a/3x3"
+  top: "inception_4a/3x3/source"
+  top: "inception_4a/3x3/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4a/3x3/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4a/3x3/source"
+  top: "inception_4a/3x3/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4a/3x3/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4a/3x3/target"
+  top: "inception_4a/3x3/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4a/3x3/bn/concat"
+  type: "Concat"
+  bottom: "inception_4a/3x3/source"
+  bottom: "inception_4a/3x3/target"
+  top: "inception_4a/3x3/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4a/3x3/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4a/3x3"
+  top: "inception_4a/3x3/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4a/3x3/bn/sc"
+  type: "Scale"
+  bottom: "inception_4a/3x3/bn"
+  top: "inception_4a/3x3/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4a/3x3/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4a/3x3/bn"
+  top: "inception_4a/3x3/bn"
+}
+layer {
+  name: "inception_4a/double3x3_reduce"
+  type: "Convolution"
+  bottom: "inception_3c/output"
+  top: "inception_4a/double3x3_reduce"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 96
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4a/double3x3_reduce/bn/slice"
+  type: "Slice"
+  bottom: "inception_4a/double3x3_reduce"
+  top: "inception_4a/double3x3_reduce/source"
+  top: "inception_4a/double3x3_reduce/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4a/double3x3_reduce/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4a/double3x3_reduce/source"
+  top: "inception_4a/double3x3_reduce/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4a/double3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4a/double3x3_reduce/target"
+  top: "inception_4a/double3x3_reduce/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4a/double3x3_reduce/bn/concat"
+  type: "Concat"
+  bottom: "inception_4a/double3x3_reduce/source"
+  bottom: "inception_4a/double3x3_reduce/target"
+  top: "inception_4a/double3x3_reduce/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4a/double3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4a/double3x3_reduce"
+  top: "inception_4a/double3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4a/double3x3_reduce/bn/sc"
+  type: "Scale"
+  bottom: "inception_4a/double3x3_reduce/bn"
+  top: "inception_4a/double3x3_reduce/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4a/double3x3_reduce/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4a/double3x3_reduce/bn"
+  top: "inception_4a/double3x3_reduce/bn"
+}
+layer {
+  name: "inception_4a/double3x3a"
+  type: "Convolution"
+  bottom: "inception_4a/double3x3_reduce/bn"
+  top: "inception_4a/double3x3a"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 128
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4a/double3x3a/bn/slice"
+  type: "Slice"
+  bottom: "inception_4a/double3x3a"
+  top: "inception_4a/double3x3a/source"
+  top: "inception_4a/double3x3a/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4a/double3x3a/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4a/double3x3a/source"
+  top: "inception_4a/double3x3a/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4a/double3x3a/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4a/double3x3a/target"
+  top: "inception_4a/double3x3a/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4a/double3x3a/bn/concat"
+  type: "Concat"
+  bottom: "inception_4a/double3x3a/source"
+  bottom: "inception_4a/double3x3a/target"
+  top: "inception_4a/double3x3a/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4a/double3x3a/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4a/double3x3a"
+  top: "inception_4a/double3x3a/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4a/double3x3a/bn/sc"
+  type: "Scale"
+  bottom: "inception_4a/double3x3a/bn"
+  top: "inception_4a/double3x3a/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4a/double3x3a/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4a/double3x3a/bn"
+  top: "inception_4a/double3x3a/bn"
+}
+layer {
+  name: "inception_4a/double3x3b"
+  type: "Convolution"
+  bottom: "inception_4a/double3x3a/bn"
+  top: "inception_4a/double3x3b"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 128
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4a/double3x3b/bn/slice"
+  type: "Slice"
+  bottom: "inception_4a/double3x3b"
+  top: "inception_4a/double3x3b/source"
+  top: "inception_4a/double3x3b/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4a/double3x3b/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4a/double3x3b/source"
+  top: "inception_4a/double3x3b/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4a/double3x3b/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4a/double3x3b/target"
+  top: "inception_4a/double3x3b/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4a/double3x3b/bn/concat"
+  type: "Concat"
+  bottom: "inception_4a/double3x3b/source"
+  bottom: "inception_4a/double3x3b/target"
+  top: "inception_4a/double3x3b/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4a/double3x3b/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4a/double3x3b"
+  top: "inception_4a/double3x3b/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4a/double3x3b/bn/sc"
+  type: "Scale"
+  bottom: "inception_4a/double3x3b/bn"
+  top: "inception_4a/double3x3b/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4a/double3x3b/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4a/double3x3b/bn"
+  top: "inception_4a/double3x3b/bn"
+}
+layer {
+  name: "inception_4a/pool"
+  type: "Pooling"
+  bottom: "inception_3c/output"
+  top: "inception_4a/pool"
+  pooling_param {
+    pool: AVE
+    kernel_size: 3
+    stride: 1
+    pad: 1
+  }
+}
+layer {
+  name: "inception_4a/pool_proj"
+  type: "Convolution"
+  bottom: "inception_4a/pool"
+  top: "inception_4a/pool_proj"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 128
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4a/pool_proj/bn/slice"
+  type: "Slice"
+  bottom: "inception_4a/pool_proj"
+  top: "inception_4a/pool_proj/source"
+  top: "inception_4a/pool_proj/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4a/pool_proj/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4a/pool_proj/source"
+  top: "inception_4a/pool_proj/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4a/pool_proj/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4a/pool_proj/target"
+  top: "inception_4a/pool_proj/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4a/pool_proj/bn/concat"
+  type: "Concat"
+  bottom: "inception_4a/pool_proj/source"
+  bottom: "inception_4a/pool_proj/target"
+  top: "inception_4a/pool_proj/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4a/pool_proj/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4a/pool_proj"
+  top: "inception_4a/pool_proj/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4a/pool_proj/bn/sc"
+  type: "Scale"
+  bottom: "inception_4a/pool_proj/bn"
+  top: "inception_4a/pool_proj/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4a/pool_proj/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4a/pool_proj/bn"
+  top: "inception_4a/pool_proj/bn"
+}
+layer {
+  name: "inception_4a/output"
+  type: "Concat"
+  bottom: "inception_4a/1x1/bn"
+  bottom: "inception_4a/3x3/bn"
+  bottom: "inception_4a/double3x3b/bn"
+  bottom: "inception_4a/pool_proj/bn"
+  top: "inception_4a/output"
+}
+layer {
+  name: "inception_4b/1x1"
+  type: "Convolution"
+  bottom: "inception_4a/output"
+  top: "inception_4b/1x1"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 192
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4b/1x1/bn/slice"
+  type: "Slice"
+  bottom: "inception_4b/1x1"
+  top: "inception_4b/1x1/source"
+  top: "inception_4b/1x1/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4b/1x1/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4b/1x1/source"
+  top: "inception_4b/1x1/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4b/1x1/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4b/1x1/target"
+  top: "inception_4b/1x1/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4b/1x1/bn/concat"
+  type: "Concat"
+  bottom: "inception_4b/1x1/source"
+  bottom: "inception_4b/1x1/target"
+  top: "inception_4b/1x1/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4b/1x1/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4b/1x1"
+  top: "inception_4b/1x1/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4b/1x1/bn/sc"
+  type: "Scale"
+  bottom: "inception_4b/1x1/bn"
+  top: "inception_4b/1x1/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4b/1x1/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4b/1x1/bn"
+  top: "inception_4b/1x1/bn"
+}
+layer {
+  name: "inception_4b/3x3_reduce"
+  type: "Convolution"
+  bottom: "inception_4a/output"
+  top: "inception_4b/3x3_reduce"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 96
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4b/3x3_reduce/bn/slice"
+  type: "Slice"
+  bottom: "inception_4b/3x3_reduce"
+  top: "inception_4b/3x3_reduce/source"
+  top: "inception_4b/3x3_reduce/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4b/3x3_reduce/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4b/3x3_reduce/source"
+  top: "inception_4b/3x3_reduce/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4b/3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4b/3x3_reduce/target"
+  top: "inception_4b/3x3_reduce/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4b/3x3_reduce/bn/concat"
+  type: "Concat"
+  bottom: "inception_4b/3x3_reduce/source"
+  bottom: "inception_4b/3x3_reduce/target"
+  top: "inception_4b/3x3_reduce/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4b/3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4b/3x3_reduce"
+  top: "inception_4b/3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4b/3x3_reduce/bn/sc"
+  type: "Scale"
+  bottom: "inception_4b/3x3_reduce/bn"
+  top: "inception_4b/3x3_reduce/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4b/3x3_reduce/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4b/3x3_reduce/bn"
+  top: "inception_4b/3x3_reduce/bn"
+}
+layer {
+  name: "inception_4b/3x3"
+  type: "Convolution"
+  bottom: "inception_4b/3x3_reduce/bn"
+  top: "inception_4b/3x3"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 128
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4b/3x3/bn/slice"
+  type: "Slice"
+  bottom: "inception_4b/3x3"
+  top: "inception_4b/3x3/source"
+  top: "inception_4b/3x3/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4b/3x3/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4b/3x3/source"
+  top: "inception_4b/3x3/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4b/3x3/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4b/3x3/target"
+  top: "inception_4b/3x3/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4b/3x3/bn/concat"
+  type: "Concat"
+  bottom: "inception_4b/3x3/source"
+  bottom: "inception_4b/3x3/target"
+  top: "inception_4b/3x3/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4b/3x3/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4b/3x3"
+  top: "inception_4b/3x3/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4b/3x3/bn/sc"
+  type: "Scale"
+  bottom: "inception_4b/3x3/bn"
+  top: "inception_4b/3x3/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4b/3x3/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4b/3x3/bn"
+  top: "inception_4b/3x3/bn"
+}
+layer {
+  name: "inception_4b/double3x3_reduce"
+  type: "Convolution"
+  bottom: "inception_4a/output"
+  top: "inception_4b/double3x3_reduce"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 96
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4b/double3x3_reduce/bn/slice"
+  type: "Slice"
+  bottom: "inception_4b/double3x3_reduce"
+  top: "inception_4b/double3x3_reduce/source"
+  top: "inception_4b/double3x3_reduce/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4b/double3x3_reduce/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4b/double3x3_reduce/source"
+  top: "inception_4b/double3x3_reduce/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4b/double3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4b/double3x3_reduce/target"
+  top: "inception_4b/double3x3_reduce/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4b/double3x3_reduce/bn/concat"
+  type: "Concat"
+  bottom: "inception_4b/double3x3_reduce/source"
+  bottom: "inception_4b/double3x3_reduce/target"
+  top: "inception_4b/double3x3_reduce/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4b/double3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4b/double3x3_reduce"
+  top: "inception_4b/double3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4b/double3x3_reduce/bn/sc"
+  type: "Scale"
+  bottom: "inception_4b/double3x3_reduce/bn"
+  top: "inception_4b/double3x3_reduce/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4b/double3x3_reduce/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4b/double3x3_reduce/bn"
+  top: "inception_4b/double3x3_reduce/bn"
+}
+layer {
+  name: "inception_4b/double3x3a"
+  type: "Convolution"
+  bottom: "inception_4b/double3x3_reduce/bn"
+  top: "inception_4b/double3x3a"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 128
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4b/double3x3a/bn/slice"
+  type: "Slice"
+  bottom: "inception_4b/double3x3a"
+  top: "inception_4b/double3x3a/source"
+  top: "inception_4b/double3x3a/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4b/double3x3a/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4b/double3x3a/source"
+  top: "inception_4b/double3x3a/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4b/double3x3a/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4b/double3x3a/target"
+  top: "inception_4b/double3x3a/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4b/double3x3a/bn/concat"
+  type: "Concat"
+  bottom: "inception_4b/double3x3a/source"
+  bottom: "inception_4b/double3x3a/target"
+  top: "inception_4b/double3x3a/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4b/double3x3a/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4b/double3x3a"
+  top: "inception_4b/double3x3a/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4b/double3x3a/bn/sc"
+  type: "Scale"
+  bottom: "inception_4b/double3x3a/bn"
+  top: "inception_4b/double3x3a/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4b/double3x3a/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4b/double3x3a/bn"
+  top: "inception_4b/double3x3a/bn"
+}
+layer {
+  name: "inception_4b/double3x3b"
+  type: "Convolution"
+  bottom: "inception_4b/double3x3a/bn"
+  top: "inception_4b/double3x3b"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 128
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4b/double3x3b/bn/slice"
+  type: "Slice"
+  bottom: "inception_4b/double3x3b"
+  top: "inception_4b/double3x3b/source"
+  top: "inception_4b/double3x3b/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4b/double3x3b/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4b/double3x3b/source"
+  top: "inception_4b/double3x3b/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4b/double3x3b/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4b/double3x3b/target"
+  top: "inception_4b/double3x3b/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4b/double3x3b/bn/concat"
+  type: "Concat"
+  bottom: "inception_4b/double3x3b/source"
+  bottom: "inception_4b/double3x3b/target"
+  top: "inception_4b/double3x3b/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4b/double3x3b/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4b/double3x3b"
+  top: "inception_4b/double3x3b/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4b/double3x3b/bn/sc"
+  type: "Scale"
+  bottom: "inception_4b/double3x3b/bn"
+  top: "inception_4b/double3x3b/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4b/double3x3b/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4b/double3x3b/bn"
+  top: "inception_4b/double3x3b/bn"
+}
+layer {
+  name: "inception_4b/pool"
+  type: "Pooling"
+  bottom: "inception_4a/output"
+  top: "inception_4b/pool"
+  pooling_param {
+    pool: AVE
+    kernel_size: 3
+    stride: 1
+    pad: 1
+  }
+}
+layer {
+  name: "inception_4b/pool_proj"
+  type: "Convolution"
+  bottom: "inception_4b/pool"
+  top: "inception_4b/pool_proj"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 128
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4b/pool_proj/bn/slice"
+  type: "Slice"
+  bottom: "inception_4b/pool_proj"
+  top: "inception_4b/pool_proj/source"
+  top: "inception_4b/pool_proj/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4b/pool_proj/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4b/pool_proj/source"
+  top: "inception_4b/pool_proj/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4b/pool_proj/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4b/pool_proj/target"
+  top: "inception_4b/pool_proj/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4b/pool_proj/bn/concat"
+  type: "Concat"
+  bottom: "inception_4b/pool_proj/source"
+  bottom: "inception_4b/pool_proj/target"
+  top: "inception_4b/pool_proj/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4b/pool_proj/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4b/pool_proj"
+  top: "inception_4b/pool_proj/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4b/pool_proj/bn/sc"
+  type: "Scale"
+  bottom: "inception_4b/pool_proj/bn"
+  top: "inception_4b/pool_proj/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4b/pool_proj/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4b/pool_proj/bn"
+  top: "inception_4b/pool_proj/bn"
+}
+layer {
+  name: "inception_4b/output"
+  type: "Concat"
+  bottom: "inception_4b/1x1/bn"
+  bottom: "inception_4b/3x3/bn"
+  bottom: "inception_4b/double3x3b/bn"
+  bottom: "inception_4b/pool_proj/bn"
+  top: "inception_4b/output"
+}
+layer {
+  name: "inception_4c/1x1"
+  type: "Convolution"
+  bottom: "inception_4b/output"
+  top: "inception_4c/1x1"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 160
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4c/1x1/bn/slice"
+  type: "Slice"
+  bottom: "inception_4c/1x1"
+  top: "inception_4c/1x1/source"
+  top: "inception_4c/1x1/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4c/1x1/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4c/1x1/source"
+  top: "inception_4c/1x1/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4c/1x1/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4c/1x1/target"
+  top: "inception_4c/1x1/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4c/1x1/bn/concat"
+  type: "Concat"
+  bottom: "inception_4c/1x1/source"
+  bottom: "inception_4c/1x1/target"
+  top: "inception_4c/1x1/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4c/1x1/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4c/1x1"
+  top: "inception_4c/1x1/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4c/1x1/bn/sc"
+  type: "Scale"
+  bottom: "inception_4c/1x1/bn"
+  top: "inception_4c/1x1/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4c/1x1/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4c/1x1/bn"
+  top: "inception_4c/1x1/bn"
+}
+layer {
+  name: "inception_4c/3x3_reduce"
+  type: "Convolution"
+  bottom: "inception_4b/output"
+  top: "inception_4c/3x3_reduce"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 128
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4c/3x3_reduce/bn/slice"
+  type: "Slice"
+  bottom: "inception_4c/3x3_reduce"
+  top: "inception_4c/3x3_reduce/source"
+  top: "inception_4c/3x3_reduce/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4c/3x3_reduce/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4c/3x3_reduce/source"
+  top: "inception_4c/3x3_reduce/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4c/3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4c/3x3_reduce/target"
+  top: "inception_4c/3x3_reduce/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4c/3x3_reduce/bn/concat"
+  type: "Concat"
+  bottom: "inception_4c/3x3_reduce/source"
+  bottom: "inception_4c/3x3_reduce/target"
+  top: "inception_4c/3x3_reduce/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4c/3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4c/3x3_reduce"
+  top: "inception_4c/3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4c/3x3_reduce/bn/sc"
+  type: "Scale"
+  bottom: "inception_4c/3x3_reduce/bn"
+  top: "inception_4c/3x3_reduce/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4c/3x3_reduce/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4c/3x3_reduce/bn"
+  top: "inception_4c/3x3_reduce/bn"
+}
+layer {
+  name: "inception_4c/3x3"
+  type: "Convolution"
+  bottom: "inception_4c/3x3_reduce/bn"
+  top: "inception_4c/3x3"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 160
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4c/3x3/bn/slice"
+  type: "Slice"
+  bottom: "inception_4c/3x3"
+  top: "inception_4c/3x3/source"
+  top: "inception_4c/3x3/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4c/3x3/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4c/3x3/source"
+  top: "inception_4c/3x3/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4c/3x3/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4c/3x3/target"
+  top: "inception_4c/3x3/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4c/3x3/bn/concat"
+  type: "Concat"
+  bottom: "inception_4c/3x3/source"
+  bottom: "inception_4c/3x3/target"
+  top: "inception_4c/3x3/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4c/3x3/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4c/3x3"
+  top: "inception_4c/3x3/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4c/3x3/bn/sc"
+  type: "Scale"
+  bottom: "inception_4c/3x3/bn"
+  top: "inception_4c/3x3/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4c/3x3/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4c/3x3/bn"
+  top: "inception_4c/3x3/bn"
+}
+layer {
+  name: "inception_4c/double3x3_reduce"
+  type: "Convolution"
+  bottom: "inception_4b/output"
+  top: "inception_4c/double3x3_reduce"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 128
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4c/double3x3_reduce/bn/slice"
+  type: "Slice"
+  bottom: "inception_4c/double3x3_reduce"
+  top: "inception_4c/double3x3_reduce/source"
+  top: "inception_4c/double3x3_reduce/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4c/double3x3_reduce/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4c/double3x3_reduce/source"
+  top: "inception_4c/double3x3_reduce/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4c/double3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4c/double3x3_reduce/target"
+  top: "inception_4c/double3x3_reduce/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4c/double3x3_reduce/bn/concat"
+  type: "Concat"
+  bottom: "inception_4c/double3x3_reduce/source"
+  bottom: "inception_4c/double3x3_reduce/target"
+  top: "inception_4c/double3x3_reduce/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4c/double3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4c/double3x3_reduce"
+  top: "inception_4c/double3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4c/double3x3_reduce/bn/sc"
+  type: "Scale"
+  bottom: "inception_4c/double3x3_reduce/bn"
+  top: "inception_4c/double3x3_reduce/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4c/double3x3_reduce/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4c/double3x3_reduce/bn"
+  top: "inception_4c/double3x3_reduce/bn"
+}
+layer {
+  name: "inception_4c/double3x3a"
+  type: "Convolution"
+  bottom: "inception_4c/double3x3_reduce/bn"
+  top: "inception_4c/double3x3a"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 160
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4c/double3x3a/bn/slice"
+  type: "Slice"
+  bottom: "inception_4c/double3x3a"
+  top: "inception_4c/double3x3a/source"
+  top: "inception_4c/double3x3a/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4c/double3x3a/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4c/double3x3a/source"
+  top: "inception_4c/double3x3a/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4c/double3x3a/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4c/double3x3a/target"
+  top: "inception_4c/double3x3a/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4c/double3x3a/bn/concat"
+  type: "Concat"
+  bottom: "inception_4c/double3x3a/source"
+  bottom: "inception_4c/double3x3a/target"
+  top: "inception_4c/double3x3a/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4c/double3x3a/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4c/double3x3a"
+  top: "inception_4c/double3x3a/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4c/double3x3a/bn/sc"
+  type: "Scale"
+  bottom: "inception_4c/double3x3a/bn"
+  top: "inception_4c/double3x3a/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4c/double3x3a/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4c/double3x3a/bn"
+  top: "inception_4c/double3x3a/bn"
+}
+layer {
+  name: "inception_4c/double3x3b"
+  type: "Convolution"
+  bottom: "inception_4c/double3x3a/bn"
+  top: "inception_4c/double3x3b"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 160
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4c/double3x3b/bn/slice"
+  type: "Slice"
+  bottom: "inception_4c/double3x3b"
+  top: "inception_4c/double3x3b/source"
+  top: "inception_4c/double3x3b/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4c/double3x3b/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4c/double3x3b/source"
+  top: "inception_4c/double3x3b/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4c/double3x3b/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4c/double3x3b/target"
+  top: "inception_4c/double3x3b/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4c/double3x3b/bn/concat"
+  type: "Concat"
+  bottom: "inception_4c/double3x3b/source"
+  bottom: "inception_4c/double3x3b/target"
+  top: "inception_4c/double3x3b/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4c/double3x3b/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4c/double3x3b"
+  top: "inception_4c/double3x3b/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4c/double3x3b/bn/sc"
+  type: "Scale"
+  bottom: "inception_4c/double3x3b/bn"
+  top: "inception_4c/double3x3b/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4c/double3x3b/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4c/double3x3b/bn"
+  top: "inception_4c/double3x3b/bn"
+}
+layer {
+  name: "inception_4c/pool"
+  type: "Pooling"
+  bottom: "inception_4b/output"
+  top: "inception_4c/pool"
+  pooling_param {
+    pool: AVE
+    kernel_size: 3
+    stride: 1
+    pad: 1
+  }
+}
+layer {
+  name: "inception_4c/pool_proj"
+  type: "Convolution"
+  bottom: "inception_4c/pool"
+  top: "inception_4c/pool_proj"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 96
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4c/pool_proj/bn/slice"
+  type: "Slice"
+  bottom: "inception_4c/pool_proj"
+  top: "inception_4c/pool_proj/source"
+  top: "inception_4c/pool_proj/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4c/pool_proj/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4c/pool_proj/source"
+  top: "inception_4c/pool_proj/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4c/pool_proj/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4c/pool_proj/target"
+  top: "inception_4c/pool_proj/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4c/pool_proj/bn/concat"
+  type: "Concat"
+  bottom: "inception_4c/pool_proj/source"
+  bottom: "inception_4c/pool_proj/target"
+  top: "inception_4c/pool_proj/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4c/pool_proj/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4c/pool_proj"
+  top: "inception_4c/pool_proj/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4c/pool_proj/bn/sc"
+  type: "Scale"
+  bottom: "inception_4c/pool_proj/bn"
+  top: "inception_4c/pool_proj/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4c/pool_proj/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4c/pool_proj/bn"
+  top: "inception_4c/pool_proj/bn"
+}
+layer {
+  name: "inception_4c/output"
+  type: "Concat"
+  bottom: "inception_4c/1x1/bn"
+  bottom: "inception_4c/3x3/bn"
+  bottom: "inception_4c/double3x3b/bn"
+  bottom: "inception_4c/pool_proj/bn"
+  top: "inception_4c/output"
+}
+layer {
+  name: "inception_4d/1x1"
+  type: "Convolution"
+  bottom: "inception_4c/output"
+  top: "inception_4d/1x1"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 96
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4d/1x1/bn/slice"
+  type: "Slice"
+  bottom: "inception_4d/1x1"
+  top: "inception_4d/1x1/source"
+  top: "inception_4d/1x1/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4d/1x1/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4d/1x1/source"
+  top: "inception_4d/1x1/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4d/1x1/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4d/1x1/target"
+  top: "inception_4d/1x1/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4d/1x1/bn/concat"
+  type: "Concat"
+  bottom: "inception_4d/1x1/source"
+  bottom: "inception_4d/1x1/target"
+  top: "inception_4d/1x1/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4d/1x1/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4d/1x1"
+  top: "inception_4d/1x1/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4d/1x1/bn/sc"
+  type: "Scale"
+  bottom: "inception_4d/1x1/bn"
+  top: "inception_4d/1x1/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4d/1x1/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4d/1x1/bn"
+  top: "inception_4d/1x1/bn"
+}
+layer {
+  name: "inception_4d/3x3_reduce"
+  type: "Convolution"
+  bottom: "inception_4c/output"
+  top: "inception_4d/3x3_reduce"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 128
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4d/3x3_reduce/bn/slice"
+  type: "Slice"
+  bottom: "inception_4d/3x3_reduce"
+  top: "inception_4d/3x3_reduce/source"
+  top: "inception_4d/3x3_reduce/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4d/3x3_reduce/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4d/3x3_reduce/source"
+  top: "inception_4d/3x3_reduce/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4d/3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4d/3x3_reduce/target"
+  top: "inception_4d/3x3_reduce/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4d/3x3_reduce/bn/concat"
+  type: "Concat"
+  bottom: "inception_4d/3x3_reduce/source"
+  bottom: "inception_4d/3x3_reduce/target"
+  top: "inception_4d/3x3_reduce/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4d/3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4d/3x3_reduce"
+  top: "inception_4d/3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4d/3x3_reduce/bn/sc"
+  type: "Scale"
+  bottom: "inception_4d/3x3_reduce/bn"
+  top: "inception_4d/3x3_reduce/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4d/3x3_reduce/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4d/3x3_reduce/bn"
+  top: "inception_4d/3x3_reduce/bn"
+}
+layer {
+  name: "inception_4d/3x3"
+  type: "Convolution"
+  bottom: "inception_4d/3x3_reduce/bn"
+  top: "inception_4d/3x3"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 192
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4d/3x3/bn/slice"
+  type: "Slice"
+  bottom: "inception_4d/3x3"
+  top: "inception_4d/3x3/source"
+  top: "inception_4d/3x3/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4d/3x3/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4d/3x3/source"
+  top: "inception_4d/3x3/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4d/3x3/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4d/3x3/target"
+  top: "inception_4d/3x3/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4d/3x3/bn/concat"
+  type: "Concat"
+  bottom: "inception_4d/3x3/source"
+  bottom: "inception_4d/3x3/target"
+  top: "inception_4d/3x3/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4d/3x3/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4d/3x3"
+  top: "inception_4d/3x3/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4d/3x3/bn/sc"
+  type: "Scale"
+  bottom: "inception_4d/3x3/bn"
+  top: "inception_4d/3x3/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4d/3x3/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4d/3x3/bn"
+  top: "inception_4d/3x3/bn"
+}
+layer {
+  name: "inception_4d/double3x3_reduce"
+  type: "Convolution"
+  bottom: "inception_4c/output"
+  top: "inception_4d/double3x3_reduce"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 160
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4d/double3x3_reduce/bn/slice"
+  type: "Slice"
+  bottom: "inception_4d/double3x3_reduce"
+  top: "inception_4d/double3x3_reduce/source"
+  top: "inception_4d/double3x3_reduce/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4d/double3x3_reduce/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4d/double3x3_reduce/source"
+  top: "inception_4d/double3x3_reduce/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4d/double3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4d/double3x3_reduce/target"
+  top: "inception_4d/double3x3_reduce/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4d/double3x3_reduce/bn/concat"
+  type: "Concat"
+  bottom: "inception_4d/double3x3_reduce/source"
+  bottom: "inception_4d/double3x3_reduce/target"
+  top: "inception_4d/double3x3_reduce/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4d/double3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4d/double3x3_reduce"
+  top: "inception_4d/double3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4d/double3x3_reduce/bn/sc"
+  type: "Scale"
+  bottom: "inception_4d/double3x3_reduce/bn"
+  top: "inception_4d/double3x3_reduce/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4d/double3x3_reduce/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4d/double3x3_reduce/bn"
+  top: "inception_4d/double3x3_reduce/bn"
+}
+layer {
+  name: "inception_4d/double3x3a"
+  type: "Convolution"
+  bottom: "inception_4d/double3x3_reduce/bn"
+  top: "inception_4d/double3x3a"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 192
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4d/double3x3a/bn/slice"
+  type: "Slice"
+  bottom: "inception_4d/double3x3a"
+  top: "inception_4d/double3x3a/source"
+  top: "inception_4d/double3x3a/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4d/double3x3a/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4d/double3x3a/source"
+  top: "inception_4d/double3x3a/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4d/double3x3a/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4d/double3x3a/target"
+  top: "inception_4d/double3x3a/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4d/double3x3a/bn/concat"
+  type: "Concat"
+  bottom: "inception_4d/double3x3a/source"
+  bottom: "inception_4d/double3x3a/target"
+  top: "inception_4d/double3x3a/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4d/double3x3a/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4d/double3x3a"
+  top: "inception_4d/double3x3a/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4d/double3x3a/bn/sc"
+  type: "Scale"
+  bottom: "inception_4d/double3x3a/bn"
+  top: "inception_4d/double3x3a/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4d/double3x3a/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4d/double3x3a/bn"
+  top: "inception_4d/double3x3a/bn"
+}
+layer {
+  name: "inception_4d/double3x3b"
+  type: "Convolution"
+  bottom: "inception_4d/double3x3a/bn"
+  top: "inception_4d/double3x3b"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 192
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4d/double3x3b/bn/slice"
+  type: "Slice"
+  bottom: "inception_4d/double3x3b"
+  top: "inception_4d/double3x3b/source"
+  top: "inception_4d/double3x3b/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4d/double3x3b/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4d/double3x3b/source"
+  top: "inception_4d/double3x3b/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4d/double3x3b/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4d/double3x3b/target"
+  top: "inception_4d/double3x3b/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4d/double3x3b/bn/concat"
+  type: "Concat"
+  bottom: "inception_4d/double3x3b/source"
+  bottom: "inception_4d/double3x3b/target"
+  top: "inception_4d/double3x3b/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4d/double3x3b/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4d/double3x3b"
+  top: "inception_4d/double3x3b/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4d/double3x3b/bn/sc"
+  type: "Scale"
+  bottom: "inception_4d/double3x3b/bn"
+  top: "inception_4d/double3x3b/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4d/double3x3b/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4d/double3x3b/bn"
+  top: "inception_4d/double3x3b/bn"
+}
+layer {
+  name: "inception_4d/pool"
+  type: "Pooling"
+  bottom: "inception_4c/output"
+  top: "inception_4d/pool"
+  pooling_param {
+    pool: AVE
+    kernel_size: 3
+    stride: 1
+    pad: 1
+  }
+}
+layer {
+  name: "inception_4d/pool_proj"
+  type: "Convolution"
+  bottom: "inception_4d/pool"
+  top: "inception_4d/pool_proj"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 96
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4d/pool_proj/bn/slice"
+  type: "Slice"
+  bottom: "inception_4d/pool_proj"
+  top: "inception_4d/pool_proj/source"
+  top: "inception_4d/pool_proj/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4d/pool_proj/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4d/pool_proj/source"
+  top: "inception_4d/pool_proj/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4d/pool_proj/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4d/pool_proj/target"
+  top: "inception_4d/pool_proj/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4d/pool_proj/bn/concat"
+  type: "Concat"
+  bottom: "inception_4d/pool_proj/source"
+  bottom: "inception_4d/pool_proj/target"
+  top: "inception_4d/pool_proj/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4d/pool_proj/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4d/pool_proj"
+  top: "inception_4d/pool_proj/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4d/pool_proj/bn/sc"
+  type: "Scale"
+  bottom: "inception_4d/pool_proj/bn"
+  top: "inception_4d/pool_proj/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4d/pool_proj/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4d/pool_proj/bn"
+  top: "inception_4d/pool_proj/bn"
+}
+layer {
+  name: "inception_4d/output"
+  type: "Concat"
+  bottom: "inception_4d/1x1/bn"
+  bottom: "inception_4d/3x3/bn"
+  bottom: "inception_4d/double3x3b/bn"
+  bottom: "inception_4d/pool_proj/bn"
+  top: "inception_4d/output"
+}
+layer {
+  name: "inception_4e/3x3_reduce"
+  type: "Convolution"
+  bottom: "inception_4d/output"
+  top: "inception_4e/3x3_reduce"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 128
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4e/3x3_reduce/bn/slice"
+  type: "Slice"
+  bottom: "inception_4e/3x3_reduce"
+  top: "inception_4e/3x3_reduce/source"
+  top: "inception_4e/3x3_reduce/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4e/3x3_reduce/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4e/3x3_reduce/source"
+  top: "inception_4e/3x3_reduce/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4e/3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4e/3x3_reduce/target"
+  top: "inception_4e/3x3_reduce/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4e/3x3_reduce/bn/concat"
+  type: "Concat"
+  bottom: "inception_4e/3x3_reduce/source"
+  bottom: "inception_4e/3x3_reduce/target"
+  top: "inception_4e/3x3_reduce/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4e/3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4e/3x3_reduce"
+  top: "inception_4e/3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4e/3x3_reduce/bn/sc"
+  type: "Scale"
+  bottom: "inception_4e/3x3_reduce/bn"
+  top: "inception_4e/3x3_reduce/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4e/3x3_reduce/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4e/3x3_reduce/bn"
+  top: "inception_4e/3x3_reduce/bn"
+}
+layer {
+  name: "inception_4e/3x3"
+  type: "Convolution"
+  bottom: "inception_4e/3x3_reduce/bn"
+  top: "inception_4e/3x3"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 192
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 2
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4e/3x3/bn/slice"
+  type: "Slice"
+  bottom: "inception_4e/3x3"
+  top: "inception_4e/3x3/source"
+  top: "inception_4e/3x3/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4e/3x3/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4e/3x3/source"
+  top: "inception_4e/3x3/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4e/3x3/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4e/3x3/target"
+  top: "inception_4e/3x3/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4e/3x3/bn/concat"
+  type: "Concat"
+  bottom: "inception_4e/3x3/source"
+  bottom: "inception_4e/3x3/target"
+  top: "inception_4e/3x3/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4e/3x3/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4e/3x3"
+  top: "inception_4e/3x3/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4e/3x3/bn/sc"
+  type: "Scale"
+  bottom: "inception_4e/3x3/bn"
+  top: "inception_4e/3x3/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4e/3x3/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4e/3x3/bn"
+  top: "inception_4e/3x3/bn"
+}
+layer {
+  name: "inception_4e/double3x3_reduce"
+  type: "Convolution"
+  bottom: "inception_4d/output"
+  top: "inception_4e/double3x3_reduce"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 192
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4e/double3x3_reduce/bn/slice"
+  type: "Slice"
+  bottom: "inception_4e/double3x3_reduce"
+  top: "inception_4e/double3x3_reduce/source"
+  top: "inception_4e/double3x3_reduce/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4e/double3x3_reduce/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4e/double3x3_reduce/source"
+  top: "inception_4e/double3x3_reduce/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4e/double3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4e/double3x3_reduce/target"
+  top: "inception_4e/double3x3_reduce/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4e/double3x3_reduce/bn/concat"
+  type: "Concat"
+  bottom: "inception_4e/double3x3_reduce/source"
+  bottom: "inception_4e/double3x3_reduce/target"
+  top: "inception_4e/double3x3_reduce/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4e/double3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4e/double3x3_reduce"
+  top: "inception_4e/double3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4e/double3x3_reduce/bn/sc"
+  type: "Scale"
+  bottom: "inception_4e/double3x3_reduce/bn"
+  top: "inception_4e/double3x3_reduce/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4e/double3x3_reduce/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4e/double3x3_reduce/bn"
+  top: "inception_4e/double3x3_reduce/bn"
+}
+layer {
+  name: "inception_4e/double3x3a"
+  type: "Convolution"
+  bottom: "inception_4e/double3x3_reduce/bn"
+  top: "inception_4e/double3x3a"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 256
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4e/double3x3a/bn/slice"
+  type: "Slice"
+  bottom: "inception_4e/double3x3a"
+  top: "inception_4e/double3x3a/source"
+  top: "inception_4e/double3x3a/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4e/double3x3a/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4e/double3x3a/source"
+  top: "inception_4e/double3x3a/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4e/double3x3a/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4e/double3x3a/target"
+  top: "inception_4e/double3x3a/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4e/double3x3a/bn/concat"
+  type: "Concat"
+  bottom: "inception_4e/double3x3a/source"
+  bottom: "inception_4e/double3x3a/target"
+  top: "inception_4e/double3x3a/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4e/double3x3a/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4e/double3x3a"
+  top: "inception_4e/double3x3a/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4e/double3x3a/bn/sc"
+  type: "Scale"
+  bottom: "inception_4e/double3x3a/bn"
+  top: "inception_4e/double3x3a/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4e/double3x3a/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4e/double3x3a/bn"
+  top: "inception_4e/double3x3a/bn"
+}
+layer {
+  name: "inception_4e/double3x3b"
+  type: "Convolution"
+  bottom: "inception_4e/double3x3a/bn"
+  top: "inception_4e/double3x3b"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 256
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 2
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_4e/double3x3b/bn/slice"
+  type: "Slice"
+  bottom: "inception_4e/double3x3b"
+  top: "inception_4e/double3x3b/source"
+  top: "inception_4e/double3x3b/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4e/double3x3b/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_4e/double3x3b/source"
+  top: "inception_4e/double3x3b/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4e/double3x3b/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4e/double3x3b/target"
+  top: "inception_4e/double3x3b/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_4e/double3x3b/bn/concat"
+  type: "Concat"
+  bottom: "inception_4e/double3x3b/source"
+  bottom: "inception_4e/double3x3b/target"
+  top: "inception_4e/double3x3b/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_4e/double3x3b/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_4e/double3x3b"
+  top: "inception_4e/double3x3b/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_4e/double3x3b/bn/sc"
+  type: "Scale"
+  bottom: "inception_4e/double3x3b/bn"
+  top: "inception_4e/double3x3b/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_4e/double3x3b/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_4e/double3x3b/bn"
+  top: "inception_4e/double3x3b/bn"
+}
+layer {
+  name: "inception_4e/pool"
+  type: "Pooling"
+  bottom: "inception_4d/output"
+  top: "inception_4e/pool"
+  pooling_param {
+    pool: MAX
+    kernel_size: 3
+    stride: 2
+  }
+}
+layer {
+  name: "inception_4e/output"
+  type: "Concat"
+  bottom: "inception_4e/3x3/bn"
+  bottom: "inception_4e/double3x3b/bn"
+  bottom: "inception_4e/pool"
+  top: "inception_4e/output"
+}
+layer {
+  name: "inception_5a/1x1"
+  type: "Convolution"
+  bottom: "inception_4e/output"
+  top: "inception_5a/1x1"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 352
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_5a/1x1/bn/slice"
+  type: "Slice"
+  bottom: "inception_5a/1x1"
+  top: "inception_5a/1x1/source"
+  top: "inception_5a/1x1/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5a/1x1/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_5a/1x1/source"
+  top: "inception_5a/1x1/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5a/1x1/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5a/1x1/target"
+  top: "inception_5a/1x1/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5a/1x1/bn/concat"
+  type: "Concat"
+  bottom: "inception_5a/1x1/source"
+  bottom: "inception_5a/1x1/target"
+  top: "inception_5a/1x1/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5a/1x1/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5a/1x1"
+  top: "inception_5a/1x1/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_5a/1x1/bn/sc"
+  type: "Scale"
+  bottom: "inception_5a/1x1/bn"
+  top: "inception_5a/1x1/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_5a/1x1/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_5a/1x1/bn"
+  top: "inception_5a/1x1/bn"
+}
+layer {
+  name: "inception_5a/3x3_reduce"
+  type: "Convolution"
+  bottom: "inception_4e/output"
+  top: "inception_5a/3x3_reduce"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 192
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_5a/3x3_reduce/bn/slice"
+  type: "Slice"
+  bottom: "inception_5a/3x3_reduce"
+  top: "inception_5a/3x3_reduce/source"
+  top: "inception_5a/3x3_reduce/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5a/3x3_reduce/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_5a/3x3_reduce/source"
+  top: "inception_5a/3x3_reduce/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5a/3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5a/3x3_reduce/target"
+  top: "inception_5a/3x3_reduce/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5a/3x3_reduce/bn/concat"
+  type: "Concat"
+  bottom: "inception_5a/3x3_reduce/source"
+  bottom: "inception_5a/3x3_reduce/target"
+  top: "inception_5a/3x3_reduce/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5a/3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5a/3x3_reduce"
+  top: "inception_5a/3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_5a/3x3_reduce/bn/sc"
+  type: "Scale"
+  bottom: "inception_5a/3x3_reduce/bn"
+  top: "inception_5a/3x3_reduce/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_5a/3x3_reduce/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_5a/3x3_reduce/bn"
+  top: "inception_5a/3x3_reduce/bn"
+}
+layer {
+  name: "inception_5a/3x3"
+  type: "Convolution"
+  bottom: "inception_5a/3x3_reduce/bn"
+  top: "inception_5a/3x3"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 320
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_5a/3x3/bn/slice"
+  type: "Slice"
+  bottom: "inception_5a/3x3"
+  top: "inception_5a/3x3/source"
+  top: "inception_5a/3x3/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5a/3x3/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_5a/3x3/source"
+  top: "inception_5a/3x3/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5a/3x3/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5a/3x3/target"
+  top: "inception_5a/3x3/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5a/3x3/bn/concat"
+  type: "Concat"
+  bottom: "inception_5a/3x3/source"
+  bottom: "inception_5a/3x3/target"
+  top: "inception_5a/3x3/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5a/3x3/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5a/3x3"
+  top: "inception_5a/3x3/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_5a/3x3/bn/sc"
+  type: "Scale"
+  bottom: "inception_5a/3x3/bn"
+  top: "inception_5a/3x3/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_5a/3x3/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_5a/3x3/bn"
+  top: "inception_5a/3x3/bn"
+}
+layer {
+  name: "inception_5a/double3x3_reduce"
+  type: "Convolution"
+  bottom: "inception_4e/output"
+  top: "inception_5a/double3x3_reduce"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 160
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_5a/double3x3_reduce/bn/slice"
+  type: "Slice"
+  bottom: "inception_5a/double3x3_reduce"
+  top: "inception_5a/double3x3_reduce/source"
+  top: "inception_5a/double3x3_reduce/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5a/double3x3_reduce/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_5a/double3x3_reduce/source"
+  top: "inception_5a/double3x3_reduce/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5a/double3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5a/double3x3_reduce/target"
+  top: "inception_5a/double3x3_reduce/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5a/double3x3_reduce/bn/concat"
+  type: "Concat"
+  bottom: "inception_5a/double3x3_reduce/source"
+  bottom: "inception_5a/double3x3_reduce/target"
+  top: "inception_5a/double3x3_reduce/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5a/double3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5a/double3x3_reduce"
+  top: "inception_5a/double3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_5a/double3x3_reduce/bn/sc"
+  type: "Scale"
+  bottom: "inception_5a/double3x3_reduce/bn"
+  top: "inception_5a/double3x3_reduce/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_5a/double3x3_reduce/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_5a/double3x3_reduce/bn"
+  top: "inception_5a/double3x3_reduce/bn"
+}
+layer {
+  name: "inception_5a/double3x3a"
+  type: "Convolution"
+  bottom: "inception_5a/double3x3_reduce/bn"
+  top: "inception_5a/double3x3a"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 224
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_5a/double3x3a/bn/slice"
+  type: "Slice"
+  bottom: "inception_5a/double3x3a"
+  top: "inception_5a/double3x3a/source"
+  top: "inception_5a/double3x3a/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5a/double3x3a/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_5a/double3x3a/source"
+  top: "inception_5a/double3x3a/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5a/double3x3a/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5a/double3x3a/target"
+  top: "inception_5a/double3x3a/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5a/double3x3a/bn/concat"
+  type: "Concat"
+  bottom: "inception_5a/double3x3a/source"
+  bottom: "inception_5a/double3x3a/target"
+  top: "inception_5a/double3x3a/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5a/double3x3a/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5a/double3x3a"
+  top: "inception_5a/double3x3a/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_5a/double3x3a/bn/sc"
+  type: "Scale"
+  bottom: "inception_5a/double3x3a/bn"
+  top: "inception_5a/double3x3a/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_5a/double3x3a/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_5a/double3x3a/bn"
+  top: "inception_5a/double3x3a/bn"
+}
+layer {
+  name: "inception_5a/double3x3b"
+  type: "Convolution"
+  bottom: "inception_5a/double3x3a/bn"
+  top: "inception_5a/double3x3b"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 224
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_5a/double3x3b/bn/slice"
+  type: "Slice"
+  bottom: "inception_5a/double3x3b"
+  top: "inception_5a/double3x3b/source"
+  top: "inception_5a/double3x3b/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5a/double3x3b/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_5a/double3x3b/source"
+  top: "inception_5a/double3x3b/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5a/double3x3b/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5a/double3x3b/target"
+  top: "inception_5a/double3x3b/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5a/double3x3b/bn/concat"
+  type: "Concat"
+  bottom: "inception_5a/double3x3b/source"
+  bottom: "inception_5a/double3x3b/target"
+  top: "inception_5a/double3x3b/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5a/double3x3b/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5a/double3x3b"
+  top: "inception_5a/double3x3b/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_5a/double3x3b/bn/sc"
+  type: "Scale"
+  bottom: "inception_5a/double3x3b/bn"
+  top: "inception_5a/double3x3b/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_5a/double3x3b/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_5a/double3x3b/bn"
+  top: "inception_5a/double3x3b/bn"
+}
+layer {
+  name: "inception_5a/pool"
+  type: "Pooling"
+  bottom: "inception_4e/output"
+  top: "inception_5a/pool"
+  pooling_param {
+    pool: AVE
+    kernel_size: 3
+    stride: 1
+    pad: 1
+  }
+}
+layer {
+  name: "inception_5a/pool_proj"
+  type: "Convolution"
+  bottom: "inception_5a/pool"
+  top: "inception_5a/pool_proj"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 128
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_5a/pool_proj/bn/slice"
+  type: "Slice"
+  bottom: "inception_5a/pool_proj"
+  top: "inception_5a/pool_proj/source"
+  top: "inception_5a/pool_proj/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5a/pool_proj/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_5a/pool_proj/source"
+  top: "inception_5a/pool_proj/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5a/pool_proj/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5a/pool_proj/target"
+  top: "inception_5a/pool_proj/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5a/pool_proj/bn/concat"
+  type: "Concat"
+  bottom: "inception_5a/pool_proj/source"
+  bottom: "inception_5a/pool_proj/target"
+  top: "inception_5a/pool_proj/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5a/pool_proj/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5a/pool_proj"
+  top: "inception_5a/pool_proj/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_5a/pool_proj/bn/sc"
+  type: "Scale"
+  bottom: "inception_5a/pool_proj/bn"
+  top: "inception_5a/pool_proj/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_5a/pool_proj/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_5a/pool_proj/bn"
+  top: "inception_5a/pool_proj/bn"
+}
+layer {
+  name: "inception_5a/output"
+  type: "Concat"
+  bottom: "inception_5a/1x1/bn"
+  bottom: "inception_5a/3x3/bn"
+  bottom: "inception_5a/double3x3b/bn"
+  bottom: "inception_5a/pool_proj/bn"
+  top: "inception_5a/output"
+}
+layer {
+  name: "inception_5b/1x1"
+  type: "Convolution"
+  bottom: "inception_5a/output"
+  top: "inception_5b/1x1"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 352
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_5b/1x1/bn/slice"
+  type: "Slice"
+  bottom: "inception_5b/1x1"
+  top: "inception_5b/1x1/source"
+  top: "inception_5b/1x1/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5b/1x1/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_5b/1x1/source"
+  top: "inception_5b/1x1/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5b/1x1/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5b/1x1/target"
+  top: "inception_5b/1x1/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5b/1x1/bn/concat"
+  type: "Concat"
+  bottom: "inception_5b/1x1/source"
+  bottom: "inception_5b/1x1/target"
+  top: "inception_5b/1x1/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5b/1x1/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5b/1x1"
+  top: "inception_5b/1x1/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_5b/1x1/bn/sc"
+  type: "Scale"
+  bottom: "inception_5b/1x1/bn"
+  top: "inception_5b/1x1/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_5b/1x1/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_5b/1x1/bn"
+  top: "inception_5b/1x1/bn"
+}
+layer {
+  name: "inception_5b/3x3_reduce"
+  type: "Convolution"
+  bottom: "inception_5a/output"
+  top: "inception_5b/3x3_reduce"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 192
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_5b/3x3_reduce/bn/slice"
+  type: "Slice"
+  bottom: "inception_5b/3x3_reduce"
+  top: "inception_5b/3x3_reduce/source"
+  top: "inception_5b/3x3_reduce/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5b/3x3_reduce/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_5b/3x3_reduce/source"
+  top: "inception_5b/3x3_reduce/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5b/3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5b/3x3_reduce/target"
+  top: "inception_5b/3x3_reduce/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5b/3x3_reduce/bn/concat"
+  type: "Concat"
+  bottom: "inception_5b/3x3_reduce/source"
+  bottom: "inception_5b/3x3_reduce/target"
+  top: "inception_5b/3x3_reduce/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5b/3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5b/3x3_reduce"
+  top: "inception_5b/3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_5b/3x3_reduce/bn/sc"
+  type: "Scale"
+  bottom: "inception_5b/3x3_reduce/bn"
+  top: "inception_5b/3x3_reduce/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_5b/3x3_reduce/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_5b/3x3_reduce/bn"
+  top: "inception_5b/3x3_reduce/bn"
+}
+layer {
+  name: "inception_5b/3x3"
+  type: "Convolution"
+  bottom: "inception_5b/3x3_reduce/bn"
+  top: "inception_5b/3x3"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 320
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_5b/3x3/bn/slice"
+  type: "Slice"
+  bottom: "inception_5b/3x3"
+  top: "inception_5b/3x3/source"
+  top: "inception_5b/3x3/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5b/3x3/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_5b/3x3/source"
+  top: "inception_5b/3x3/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5b/3x3/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5b/3x3/target"
+  top: "inception_5b/3x3/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5b/3x3/bn/concat"
+  type: "Concat"
+  bottom: "inception_5b/3x3/source"
+  bottom: "inception_5b/3x3/target"
+  top: "inception_5b/3x3/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5b/3x3/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5b/3x3"
+  top: "inception_5b/3x3/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_5b/3x3/bn/sc"
+  type: "Scale"
+  bottom: "inception_5b/3x3/bn"
+  top: "inception_5b/3x3/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_5b/3x3/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_5b/3x3/bn"
+  top: "inception_5b/3x3/bn"
+}
+layer {
+  name: "inception_5b/double3x3_reduce"
+  type: "Convolution"
+  bottom: "inception_5a/output"
+  top: "inception_5b/double3x3_reduce"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 192
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_5b/double3x3_reduce/bn/slice"
+  type: "Slice"
+  bottom: "inception_5b/double3x3_reduce"
+  top: "inception_5b/double3x3_reduce/source"
+  top: "inception_5b/double3x3_reduce/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5b/double3x3_reduce/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_5b/double3x3_reduce/source"
+  top: "inception_5b/double3x3_reduce/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5b/double3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5b/double3x3_reduce/target"
+  top: "inception_5b/double3x3_reduce/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5b/double3x3_reduce/bn/concat"
+  type: "Concat"
+  bottom: "inception_5b/double3x3_reduce/source"
+  bottom: "inception_5b/double3x3_reduce/target"
+  top: "inception_5b/double3x3_reduce/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5b/double3x3_reduce/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5b/double3x3_reduce"
+  top: "inception_5b/double3x3_reduce/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_5b/double3x3_reduce/bn/sc"
+  type: "Scale"
+  bottom: "inception_5b/double3x3_reduce/bn"
+  top: "inception_5b/double3x3_reduce/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_5b/double3x3_reduce/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_5b/double3x3_reduce/bn"
+  top: "inception_5b/double3x3_reduce/bn"
+}
+layer {
+  name: "inception_5b/double3x3a"
+  type: "Convolution"
+  bottom: "inception_5b/double3x3_reduce/bn"
+  top: "inception_5b/double3x3a"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 224
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_5b/double3x3a/bn/slice"
+  type: "Slice"
+  bottom: "inception_5b/double3x3a"
+  top: "inception_5b/double3x3a/source"
+  top: "inception_5b/double3x3a/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5b/double3x3a/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_5b/double3x3a/source"
+  top: "inception_5b/double3x3a/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5b/double3x3a/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5b/double3x3a/target"
+  top: "inception_5b/double3x3a/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5b/double3x3a/bn/concat"
+  type: "Concat"
+  bottom: "inception_5b/double3x3a/source"
+  bottom: "inception_5b/double3x3a/target"
+  top: "inception_5b/double3x3a/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5b/double3x3a/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5b/double3x3a"
+  top: "inception_5b/double3x3a/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_5b/double3x3a/bn/sc"
+  type: "Scale"
+  bottom: "inception_5b/double3x3a/bn"
+  top: "inception_5b/double3x3a/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_5b/double3x3a/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_5b/double3x3a/bn"
+  top: "inception_5b/double3x3a/bn"
+}
+layer {
+  name: "inception_5b/double3x3b"
+  type: "Convolution"
+  bottom: "inception_5b/double3x3a/bn"
+  top: "inception_5b/double3x3b"
+  param {
+    lr_mult: 0
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 224
+    bias_term: false
+    pad: 1
+    kernel_size: 3
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_5b/double3x3b/bn/slice"
+  type: "Slice"
+  bottom: "inception_5b/double3x3b"
+  top: "inception_5b/double3x3b/source"
+  top: "inception_5b/double3x3b/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5b/double3x3b/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_5b/double3x3b/source"
+  top: "inception_5b/double3x3b/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5b/double3x3b/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5b/double3x3b/target"
+  top: "inception_5b/double3x3b/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5b/double3x3b/bn/concat"
+  type: "Concat"
+  bottom: "inception_5b/double3x3b/source"
+  bottom: "inception_5b/double3x3b/target"
+  top: "inception_5b/double3x3b/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5b/double3x3b/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5b/double3x3b"
+  top: "inception_5b/double3x3b/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_5b/double3x3b/bn/sc"
+  type: "Scale"
+  bottom: "inception_5b/double3x3b/bn"
+  top: "inception_5b/double3x3b/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_5b/double3x3b/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_5b/double3x3b/bn"
+  top: "inception_5b/double3x3b/bn"
+}
+layer {
+  name: "inception_5b/pool"
+  type: "Pooling"
+  bottom: "inception_5a/output"
+  top: "inception_5b/pool"
+  pooling_param {
+    pool: MAX
+    kernel_size: 3
+    stride: 1
+    pad: 1
+  }
+}
+layer {
+  name: "inception_5b/pool_proj"
+  type: "Convolution"
+  bottom: "inception_5b/pool"
+  top: "inception_5b/pool_proj"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 128
+    bias_term: false
+    pad: 0
+    kernel_size: 1
+    stride: 1
+    weight_filler {
+      type: "xavier"
+    }
+  }
+}
+layer {
+  name: "inception_5b/pool_proj/bn/slice"
+  type: "Slice"
+  bottom: "inception_5b/pool_proj"
+  top: "inception_5b/pool_proj/source"
+  top: "inception_5b/pool_proj/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    slice_point: 32
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5b/pool_proj/bn/source"
+  type: "BatchNorm"
+  bottom: "inception_5b/pool_proj/source"
+  top: "inception_5b/pool_proj/source"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5b/pool_proj/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5b/pool_proj/target"
+  top: "inception_5b/pool_proj/target"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "inception_5b/pool_proj/bn/concat"
+  type: "Concat"
+  bottom: "inception_5b/pool_proj/source"
+  bottom: "inception_5b/pool_proj/target"
+  top: "inception_5b/pool_proj/bn"
+  include {
+    phase: TRAIN
+  }
+  concat_param {
+    axis: 0
+  }
+}
+layer {
+  name: "inception_5b/pool_proj/bn/target"
+  type: "BatchNorm"
+  bottom: "inception_5b/pool_proj"
+  top: "inception_5b/pool_proj/bn"
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "inception_5b/pool_proj/bn/sc"
+  type: "Scale"
+  bottom: "inception_5b/pool_proj/bn"
+  top: "inception_5b/pool_proj/bn"
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 1
+    decay_mult: 0
+  }
+  scale_param {
+    bias_term: true
+  }
+}
+layer {
+  name: "inception_5b/pool_proj/bn/sc/relu"
+  type: "ReLU"
+  bottom: "inception_5b/pool_proj/bn"
+  top: "inception_5b/pool_proj/bn"
+}
+layer {
+  name: "inception_5b/output"
+  type: "Concat"
+  bottom: "inception_5b/1x1/bn"
+  bottom: "inception_5b/3x3/bn"
+  bottom: "inception_5b/double3x3b/bn"
+  bottom: "inception_5b/pool_proj/bn"
+  top: "inception_5b/output"
+}
+layer {
+  name: "pool5/7x7_s1"
+  type: "Pooling"
+  bottom: "inception_5b/output"
+  top: "pool5/7x7_s1"
+  pooling_param {
+    pool: AVE
+    kernel_size: 7
+    stride: 1
+  }
+}
+
+layer {
+  name: "fc1"
+  type: "InnerProduct"
+  bottom: "pool5/7x7_s1"
+  top: "fc1"
+  param {
+    lr_mult: 10
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 20
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 31
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "loss/slice"
+  type: "Slice"
+  bottom: "fc1"
+  top: "loss/fc1/source"
+  top: "loss/fc1/target"
+  include {
+    phase: TRAIN
+  }
+  slice_param {
+    axis: 0
+    slice_point: 32
+  }
+}
+layer {
+  name: "loss-source"
+  type: "SoftmaxWithLoss"
+  bottom: "loss/fc1/source"
+  bottom: "label/source"
+  top: "loss-source"
+  include {
+    phase: TRAIN
+  }
+}
+layer {
+  name: "loss-target"
+  type: "EntropyLoss"
+  bottom: "loss/fc1/target"
+  top: "loss-target"
+  loss_weight: $ENTROPY_LOSS_WEIGHT$
+  include {
+    phase: TRAIN
+  }
+}
+
+layer {
+  name: "accuracy"
+  type: "Accuracy"
+  bottom: "fc1"
+  bottom: "label"
+  top: "accuracy"
+  include {
+    phase: TEST
+  }
+}
+layer {
+  name: "loss"
+  type: "SoftmaxWithLoss"
+  bottom: "fc1"
+  bottom: "label"
+  top: "loss"
+  include {
+    phase: TEST
+  }
+}
