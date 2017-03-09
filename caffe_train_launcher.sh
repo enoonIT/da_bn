@@ -1,10 +1,10 @@
-CAFFE_HOME=/home/enoon/libs/bvlc_caffe/
+CAFFE_HOME=/home/enoon/libs/dial_caffe/
 #MODEL_PATH=${CAFFE_HOME}/models/bvlc_alexnet/bvlc_alexnet.caffemodel
 #MODEL_PATH=/home/enoon/code/inception_bn_iter_128000.caffemodel
-MODEL_PATH=${3}
+MODEL_PATH=${4}
 OUT_DIR=output_dir
 N_SPLITS=5
-for line in $(find ${1} -maxdepth 3 -mindepth 3 -type d -not -path '*/\.*'); do 
+for line in $(find ${1} -maxdepth ${3} -mindepth ${3} -type d -not -path '*/\.*'); do 
     cd $line
     for i in $(seq 1 ${N_SPLITS}); do
 	echo Starting $line - split $i

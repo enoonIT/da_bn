@@ -15,8 +15,13 @@ class BuilderHelper:
         params_functions[S.dual_separated_bn] = build_dual_separated_bn
         params_functions[S.alexnet_bn] = build_dual_separated_bn
         params_functions[S.inception] = build_inception
-        params_functions[S.inception_laplace] = build_inception_laplace
+        params_functions[S.inception_l1] = build_inception
+        params_functions[S.inception_laplace] = build_inception
         params_functions[S.dual_separated_bn_scale] = build_dual_separated_bn
+        params_functions[S.dual_separated_bn_eps] = build_dual_separated_bn
+        params_functions[S.dual_separated_bn_l1] = build_dual_separated_bn
+        params_functions[S.dual_separated_bn_l1_scale] = build_dual_separated_bn
+        params_functions[S.dual_separated_bn_eps_l1] = build_dual_separated_bn
         params_functions[S.dual_shared_bn] = build_dual_shared_bn
         params_functions[S.dual] = build_dual_separated_bn
         self.data_info = database_info
@@ -115,10 +120,10 @@ def fill_general_params(solver, train, setting):
         train["TARGET_TEST_BSIZE"] = int((train["SOURCE_BSIZE"] * target_size) / source_size)
         solver["TEST_ITER"] = int(ceil(float(target_size) / train["TARGET_TEST_BSIZE"]))
     else:
-        if setting.name in [S.inception, S.inception_laplace]:
+        if setting.name in [S.inception, S.inception_laplace, S.inception_l1]:
             train["TEST_BSIZE"] = 8
         else:
-            train["TEST_BSIZE"] = 128
+            train["TEST_BSIZE"] = 64
         solver["TEST_ITER"] = int(ceil(float(setting.target.size) / train["TEST_BSIZE"]))
 
 
@@ -129,21 +134,10 @@ def build_inception(solver, train, setting):
     solver["MAX_ITER"] = MAX_ITER
     solver["TRAIN_PROTOTXT"] = train_prototxt_name
     solver["SNAPSHOT_PREFIX"] = "snapshot_dual_separated_bn_inception"
-    solver["TEST_INTERVAL"] = 30
-
-
-def build_inception_laplace(solver, train, setting):
-    train_prototxt_name = "dual_separated_bn_inception_laplace_train.prototxt"
-    MAX_ITER = int((setting.epochs * setting.source.size) / 32)
-    solver["STEPSIZE"] = int(MAX_ITER * 0.333)
-    solver["MAX_ITER"] = MAX_ITER
-    solver["TRAIN_PROTOTXT"] = train_prototxt_name
-    solver["SNAPSHOT_PREFIX"] = "snapshot_dual_separated_bn_inception"
-    solver["TEST_INTERVAL"] = 30
+    solver["TEST_INTERVAL"] = 120
 
 
 def build_dual_separated_bn(solver, train, setting):
-#    import ipdb; ipdb.set_trace()
     train_prototxt_name = "dual_separated_bn_train.prototxt"
     source_size = setting.source.size
     target_size = setting.target.size
