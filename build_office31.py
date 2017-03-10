@@ -92,10 +92,10 @@ def build_all(args):
     caltech10 = Dataset(1123, CALTECH10_PATH, 20)
     dslr10 = Dataset(157, DSLR10_PATH, 8)
     #
-    bing12 = Dataset(3133, BING12_PATH, 0)
-    caltech12 = Dataset(2718, CALTECH12_PATH, 0)
-    ilsvrc12 = Dataset(40295, ILSVRC12_PATH, 0)
-    pascal12 = Dataset(7652, PASCAL12_PATH, 0)
+    bing12 = Dataset(3523, BING12_PATH, 0)
+    caltech12 = Dataset(2927, CALTECH12_PATH, 0)
+    ilsvrc12 = Dataset(41630, ILSVRC12_PATH, 0)
+    pascal12 = Dataset(11735, PASCAL12_PATH, 0)
     data_info = {K.A10: amazon10, K.W10: webcam10, K.C10: caltech10, K.D10: dslr10,
                  K.A: amazon31, K.W: webcam31, K.D: dslr31,
                  K.B12: bing12, K.C12: caltech12, K.I12: ilsvrc12, K.P12: pascal12}
