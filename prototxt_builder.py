@@ -13,9 +13,11 @@ class BuilderHelper:
     def __init__(self, database_info, solver_defaults, train_defaults, solver_template):
         params_functions[S.base] = build_dual_shared_bn
         params_functions[S.dual_separated_bn] = build_dual_separated_bn
+        params_functions[S.autodial_bn] = build_dual_separated_bn
         params_functions[S.alexnet_bn] = build_dual_separated_bn
         params_functions[S.inception] = build_inception
         params_functions[S.inception_l1] = build_inception
+        params_functions[S.autodial_bn] = build_inception
         params_functions[S.inception_laplace] = build_inception
         params_functions[S.dual_separated_bn_scale] = build_dual_separated_bn
         params_functions[S.dual_separated_bn_eps] = build_dual_separated_bn
@@ -120,7 +122,7 @@ def fill_general_params(solver, train, setting):
         train["TARGET_TEST_BSIZE"] = int((train["SOURCE_BSIZE"] * target_size) / source_size)
         solver["TEST_ITER"] = int(ceil(float(target_size) / train["TARGET_TEST_BSIZE"]))
     else:
-        if setting.name in [S.inception, S.inception_laplace, S.inception_l1]:
+        if setting.name in [S.inception, S.inception_laplace, S.inception_l1, S.autodial_bn]:
             train["TEST_BSIZE"] = 8
         else:
             train["TEST_BSIZE"] = 64

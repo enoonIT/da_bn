@@ -13,7 +13,7 @@ def get_arguments():
     parser.add_argument("--num_iter", default=5, type=int, help="Number of last epochs to average")
     parser.add_argument("--kval", action="store_true")
     parser.add_argument("--sampling", action="store_true")
-    parser.add_argument("--n_mean", default=5, type=int)
+    parser.add_argument("--n_mean", default=1, type=int)
     return parser.parse_args()
 
 
@@ -54,3 +54,4 @@ if __name__ == '__main__':
             print "%f, %f, %s %d" % (str(results.mean()), str(results.std()), setting, len(experiments))
         else:
             print "%.2f, %.2f, %s %d" % (results.mean(), results.std(), setting, len(experiments))
+        #print np.sort(results)

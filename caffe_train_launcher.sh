@@ -1,4 +1,4 @@
-CAFFE_HOME=/home/enoon/libs/dial_caffe/
+CAFFE_HOME=/home/enoon/libs/autodial_caffe/
 #MODEL_PATH=${CAFFE_HOME}/models/bvlc_alexnet/bvlc_alexnet.caffemodel
 #MODEL_PATH=/home/enoon/code/inception_bn_iter_128000.caffemodel
 MODEL_PATH=${4}

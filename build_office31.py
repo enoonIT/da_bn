@@ -23,6 +23,7 @@ def get_arguments():
     parser = ArgumentParser("")
     parser.add_argument(
         "output_directory", help="Where to build the directory tree for experiments")
+    parser.add_argument("n_classes", default=0, type=int)
     parser.add_argument("--loss_weight", default=0.6, type=float)
     parser.add_argument("--batch_size", default=256, type=int)
     parser.add_argument("--cross_validate", default=None, type=int)
@@ -53,6 +54,7 @@ class Settings:
     def __init__(self):
         self.base = "base"
         self.dual_shared_bn = "dual_shared_bn"
+        self.autodial_bn = "autodial_bn"
         self.dual_separated_bn = "dual_separated_bn"
         self.dual_separated_bn_eps = "dual_separated_bn_eps"
         self.dual_separated_bn_l1 = "dual_separated_bn_l1"
@@ -61,6 +63,7 @@ class Settings:
         self.dual_separated_bn_scale = "dual_separated_bn_scale"
         self.dual = "dual"
         self.inception = "dual_separated_bn_inception"
+        self.autodial_bn = "autodial_inception"
         self.inception_l1 = "dual_separated_bn_inception_l1"
         self.inception_laplace = "dual_separated_bn_inception_laplace"
         self.alexnet_bn = "dual_separated_bn_all"
@@ -78,9 +81,10 @@ settingsIC = [(K.C12, K.I12), (K.C12, K.P12), (K.C12, K.B12), (K.I12, K.C12), (K
 
 # exp_settings = [S.dual_shared_bn, S.dual_separated_bn, S.dual]
 # exp_settings = [S.base, S.dual_shared_bn, S.dual_separated_bn, S.dual]
-# exp_settings = [S.dual_separated_bn_scale]
+# exp_settings = [S.dual_separated_bn]
 # exp_settings = [S.dual_separated_bn_l1, S.dual_separated_bn]
-exp_settings = [S.inception]
+# exp_settings = [S.inception]
+exp_settings = [S.autodial_bn]
 
 
 def build_all(args):
@@ -110,7 +114,7 @@ def build_all(args):
                       "SOURCE_TEST_BSIZE": 0,
                       "ENTROPY_LOSS_WEIGHT": args.loss_weight,
                       "MEAN_FILE": MEAN_FILE_PATH,
-                      "N_CLASSES": 31,
+                      "N_CLASSES": args.n_classes,
                       "BSIZE": batch_size}
     solver_defaults = {"TRAIN_PROTOTXT": "train_prototxt_name",
                        "TEST_ITER": 10,
